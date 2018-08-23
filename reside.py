@@ -515,7 +515,7 @@ class RE_NN(Model):
 						[self.total_sents, de_out_dim]
 					)
 
-			elif self.p.ProbY:
+			if self.p.ProbY:
 				sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
 				de_out_dim += self.p.alias_dim
 
