@@ -1,0 +1,11 @@
+/log/*
+/data/*
+/tf_board/*
+/__pycache__/*
+/checkpoints/*
+/glove/*
+
+*.pyc
+*.swp
+*.egg
+*.zip
