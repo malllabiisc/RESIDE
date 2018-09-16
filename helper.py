@@ -1,4 +1,4 @@
-import numpy as np, sys, unicodedata, requests, os, random, pdb, requests, json, itertools
+import numpy as np, sys, unicodedata, requests, os, random, pdb, requests, json, itertools, gensim
 import pickle, operator, uuid, time, argparse
 import logging, logging.config, itertools, pathlib
 from collections import defaultdict as ddict

@@ -216,7 +216,6 @@ class RE_NN(Model):
 
 		y_hot = self.getOneHot(Y, 	self.num_class)
 		proby = self.getOneHot(prob_y, 	self.num_class-1, isprob=True)	# -1 because NA cannot be in proby
-		# pdb.set_trace()
 
 		feed_dict = {}
 		feed_dict[self.input_x] 		= np.array(x_pad)
@@ -261,15 +260,9 @@ class RE_NN(Model):
 		for lbl in range(max_labels):
 			for i, edges in enumerate(edgeList):
 				in_ind_temp,  in_data_temp  = [], []
-				try:
-					for j, (src, dest, _, _) in enumerate(edges):
-						adj_mat_ind [lbl, i, j] = (src, dest)
-						adj_mat_data[lbl, i, j] = 1.0
-				except Exception as e:
-					exc_type, exc_obj, exc_tb = sys.exc_info()
-					fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-					print('\nException Type: {}, \nCause: {}, \nfname: {}, \nline_no: {}'.format(exc_type, e.args[0], fname, exc_tb.tb_lineno))
-					pdb.set_trace()
+				for j, (src, dest, _, _) in enumerate(edges):
+					adj_mat_ind [lbl, i, j] = (src, dest)
+					adj_mat_data[lbl, i, j] = 1.0
 
 		return adj_mat_ind, adj_mat_data
 
@@ -435,16 +428,14 @@ class RE_NN(Model):
 
 		with tf.variable_scope('TypeInfo') as scope:
 			self.type_dim    = self.p.type_dim
-			_type_embeddings = tf.get_variable('type_embeddings', initializer=xavier([self.type_num, self.type_dim]), trainable=True, regularizer=self.regularizer)
+			_type_embeddings = tf.get_variable('type_embeddings', initializer=xavier([self.type_num, self.p.type_dim]), trainable=True, regularizer=self.regularizer)
 
 		with tf.variable_scope('Sentence_attention') as scope:
 			if self.p.ProbY: de_out_dim += self.p.alias_dim
-			if self.p.Type:  de_out_dim += 2*self.type_dim
-
 			sent_atten_q = tf.get_variable('sent_atten_q', initializer=xavier([de_out_dim, 1]))
 
-
 		with tf.variable_scope('FC1') as scope:
+			if self.p.Type:  de_out_dim += 2*self.p.type_dim
 			w_rel   = tf.get_variable('w_rel', initializer=xavier([de_out_dim, self.num_class]), 			regularizer=self.regularizer)
 			b_rel   = tf.get_variable('b_rel', initializer=np.zeros([self.num_class]).astype(np.float32), 		regularizer=self.regularizer)
 
@@ -519,7 +510,7 @@ class RE_NN(Model):
 				sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
 				de_out_dim += self.p.alias_dim
 
-		if not self.p.Type:
+		if self.p.Type:
 			with tf.variable_scope('TypeInfo', reuse=tf.AUTO_REUSE) as scope:
 				pad_type_embed   = tf.zeros([1, self.type_dim],     dtype=tf.float32, name='type_pad')
 				_type_embeddings = tf.get_variable('type_embeddings')
@@ -554,7 +545,7 @@ class RE_NN(Model):
 
 		if self.p.Type:
 			bag_rep    = tf.concat([bag_rep, type_info], axis=1)
-			de_out_dim = de_out_dim + self.type_dim * 2
+			de_out_dim = de_out_dim + self.p.type_dim * 2
 
 		with tf.variable_scope('FC1', reuse=tf.AUTO_REUSE) as scope:
 			w_rel   = tf.get_variable('w_rel')
@@ -567,7 +558,7 @@ class RE_NN(Model):
 			y_actual = tf.argmax(self.input_y, axis=1)
 			accuracy = tf.reduce_mean(tf.cast(tf.equal(y_pred, y_actual), tf.float32))
 
-		'''
+		''' Debugging command:
 			res  = debug_nn([de_out], self.create_feed_dict( next(self.getBatches(self.data['train'])) ) ); pdb.set_trace()
 		'''
 		return nn_out, accuracy
@@ -734,7 +725,7 @@ class RE_NN(Model):
 		for epoch in range(self.p.max_epochs):
 			self.logger.info('Epoch: {}'.format(epoch))
 
-			train_loss, train_acc 				   	  	      = self.run_epoch(sess, self.data['train'], epoch)
+			# train_loss, train_acc 				   	  	      = self.run_epoch(sess, self.data['train'], epoch)
 			val_loss, val_pred, val_acc, y, y_pred, logit_list, y_hot, wrd_attens = self.predict  (sess, self.data['test'])
 
 			val_prec, val_rec, val_f1 = self.calc_prec_recall_f1(y, y_pred, 0)	# 0: self.rel2id['NA']
@@ -792,19 +783,19 @@ if __name__== "__main__":
 
 	parser.add_argument('-data', 	 dest="dataset", 	required=True,							help='Dataset to use')
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
-	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=10, 			type=int, 			help='Dimension of positional embeddings')
+	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=16, 			type=int, 			help='Dimension of positional embeddings')
 	parser.add_argument('-lstm',  	 dest="lstm", 		default='concat',	 					help='Bi-LSTM add/concat')
-	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=128,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
+	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
 	parser.add_argument('-num_class',dest="num_class", 	default=53,   	type=int, 					help='num classes for the dataset')
 
-	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_true',   						help='Decide to include GCN in the model')
+	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_false',   					help='Decide to include GCN in the model')
 	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Decide to include gates in GCN')
-	parser.add_argument('-Type', 	 dest="Type", 		action='store_true',						help='Decide to include Entity Type Side Information')
-	parser.add_argument('-ProbY', 	 dest="ProbY", 		action='store_true', 						help='Decide to include Relation Alias Side Information')
+	parser.add_argument('-Type', 	 dest="Type", 		action='store_false',						help='Decide to include Entity Type Side Information')
+	parser.add_argument('-ProbY', 	 dest="ProbY", 		action='store_false', 						help='Decide to include Relation Alias Side Information')
 
-	parser.add_argument('-type_dim', dest="type_dim", 	default=64,   			type=int, 			help='Type dimension')
-	parser.add_argument('-alias_dim',dest="alias_dim", 	default=16,   			type=int, 			help='Alias dimension')
-	parser.add_argument('-de_dim',   dest="de_gcn_dim", 	default=32,   			type=int, 			help='Hidden state dimension of GCN over dependency tree')
+	parser.add_argument('-type_dim', dest="type_dim", 	default=50,   			type=int, 			help='Type dimension')
+	parser.add_argument('-alias_dim',dest="alias_dim", 	default=32,   			type=int, 			help='Alias dimension')
+	parser.add_argument('-de_dim',   dest="de_gcn_dim", 	default=16,   			type=int, 			help='Hidden state dimension of GCN over dependency tree')
 	parser.add_argument('-de_layer', dest="de_layers", 	default=1,   			type=int, 			help='Number of layers in GCN over dependency tree')
 	parser.add_argument('-drop',	 dest="dropout", 	default=0.8,  			type=float,			help='Dropout for full connected layer')
 	parser.add_argument('-rdrop',	 dest="rec_dropout", 	default=0.8,  			type=float,			help='Recurrent dropout for LSTM')
@@ -827,7 +818,6 @@ if __name__== "__main__":
 	parser.add_argument('-embed_dim',dest="embed_dim", 	default=50, type=int,						help='Dimension of embedding')
 	args = parser.parse_args()
 
-	args.embed_dim = int(args.embed_init.split('_')[1])
 	if not args.restore: args.name = args.name + '_' + time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")
 
 	tf.set_random_seed(args.seed)
