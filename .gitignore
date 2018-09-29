@@ -4,6 +4,7 @@
 /__pycache__/*
 /checkpoints/*
 /glove/*
+/results/*
 
 *.pyc
 *.swp
