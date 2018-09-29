@@ -15,7 +15,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 - We use [Riedel NYT](http://iesl.cs.umass.edu/riedel/ecml/) and [Google IISc Distant Supervision (GIDS)](https://arxiv.org/pdf/1804.06987.pdf) dataset​ for evaluation.
 - The processed version of the datasets can be downloaded from [here](https://drive.google.com/file/d/1brGCxXm2ofbF_0HP4myfBSHphGg4v6BS/view?usp=sharing). 
 
-### Evalute pre-trained model:
+### Evaluate pretrained model:
 
 - `reside.py` contains TensorFlow (1.x) based implementation of RESIDE (proposed method).
 - Download the pretrained model's parameters from [here](https://drive.google.com/open?id=16yuV5SoxHEdAURTw5wrqYKR1cStQrzTw). 
