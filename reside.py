@@ -5,7 +5,7 @@ import tensorflow as tf
 """
 Abbreviations used in variable names:
 	Type:  Entity type side informatoin
-	ProbY: Relation alias side information
+	ProbY, RelAlias: Relation alias side information
 """
 
 class RE_NN(Model):
@@ -388,7 +388,7 @@ class RE_NN(Model):
 			pos1_embeddings  = tf.get_variable('pos1_embeddings', initializer=xavier([self.max_pos, self.p.pos_dim]), trainable=True,   regularizer=self.regularizer)
 			pos2_embeddings  = tf.get_variable('pos2_embeddings', initializer=xavier([self.max_pos, self.p.pos_dim]), trainable=True,   regularizer=self.regularizer)
 
-		if self.p.ProbY:
+		if self.p.RelAlias:
 			with tf.variable_scope('AliasInfo') as scope:
 				_alias_embeddings = tf.get_variable('alias_embeddings', initializer=xavier([self.num_class-1, self.p.alias_dim]), trainable=True, regularizer=self.regularizer)
 
@@ -438,7 +438,7 @@ class RE_NN(Model):
 			_type_embeddings = tf.get_variable('type_embeddings', initializer=xavier([self.type_num, self.type_dim]), trainable=True, regularizer=self.regularizer)
 
 		with tf.variable_scope('Sentence_attention') as scope:
-			if self.p.ProbY: de_out_dim += self.p.alias_dim
+			if self.p.RelAlias: de_out_dim += self.p.alias_dim
 			if self.p.Type:  de_out_dim += 2*self.type_dim
 
 			sent_atten_q = tf.get_variable('sent_atten_q', initializer=xavier([de_out_dim, 1]))
@@ -461,7 +461,7 @@ class RE_NN(Model):
 			pos2_embeddings = tf.get_variable('pos2_embeddings')
 
 
-		if self.p.ProbY:
+		if self.p.RelAlias:
 			with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
 				pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
 				_alias_embeddings = tf.get_variable('alias_embeddings')
@@ -515,7 +515,7 @@ class RE_NN(Model):
 						[self.total_sents, de_out_dim]
 					)
 
-			if self.p.ProbY:
+			if self.p.RelAlias:
 				sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
 				de_out_dim += self.p.alias_dim
 
@@ -800,7 +800,7 @@ if __name__== "__main__":
 	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_true',   						help='Decide to include GCN in the model')
 	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Decide to include gates in GCN')
 	parser.add_argument('-Type', 	 dest="Type", 		action='store_true',						help='Decide to include Entity Type Side Information')
-	parser.add_argument('-ProbY', 	 dest="ProbY", 		action='store_true', 						help='Decide to include Relation Alias Side Information')
+	parser.add_argument('-RelAlias', dest="RelAlias", 	action='store_true', 						help='Decide to include Relation Alias Side Information')
 
 	parser.add_argument('-type_dim', dest="type_dim", 	default=64,   			type=int, 			help='Type dimension')
 	parser.add_argument('-alias_dim',dest="alias_dim", 	default=16,   			type=int, 			help='Alias dimension')
