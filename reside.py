@@ -6,30 +6,10 @@ import tensorflow as tf
 Abbreviations used in variable names:
 	Type:  Entity type side informatoin
 	ProbY, RelAlias: Relation alias side information
-	NOTE: View this file with tab size 8.
+NOTE: View this file with tab size 8.
 """
 
 class RE_NN(Model):
-
-	# Pads the data in a batch
-	def padData(self, data, seq_len):
-		temp = np.zeros((len(data), seq_len), np.int32)
-		mask = np.zeros((len(data), seq_len), np.float32)
-
-		for i, ele in enumerate(data):
-			temp[i, :len(ele)] = ele[:seq_len]
-			mask[i, :len(ele)] = np.ones(len(ele[:seq_len]), np.float32)
-
-		return temp, mask
-
-	# Generates the one-hot representation
-	def getOneHot(self, data, num_class, isprob=False):
-		temp = np.zeros((len(data), num_class), np.int32)
-		for i, ele in enumerate(data):
-			for rel in ele:
-				if isprob:	temp[i, rel-1] = 1
-				else:		temp[i, rel]   = 1
-		return temp
 
 	# Generates batches of multiple bags
 	def getBatches(self, data, shuffle = True):
@@ -176,15 +156,35 @@ class RE_NN(Model):
 		self.dropout 		= tf.placeholder_with_default(self.p.dropout, 	  shape=(), name='dropout')		# Dropout used in GCN Layer
 		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')		# Dropout used in Bi-LSTM
 
+	# Pads the data in a batch
+	def padData(self, data, seq_len):
+		temp = np.zeros((len(data), seq_len), np.int32)
+		mask = np.zeros((len(data), seq_len), np.float32)
 
-	def pad_dynamic(self, X, pos1, pos2, sub_type, obj_type, prob_y):
+		for i, ele in enumerate(data):
+			temp[i, :len(ele)] = ele[:seq_len]
+			mask[i, :len(ele)] = np.ones(len(ele[:seq_len]), np.float32)
+
+		return temp, mask
+
+	# Generates the one-hot representation
+	def getOneHot(self, data, num_class, isprob=False):
+		temp = np.zeros((len(data), num_class), np.int32)
+		for i, ele in enumerate(data):
+			for rel in ele:
+				if isprob:	temp[i, rel-1] = 1
+				else:		temp[i, rel]   = 1
+		return temp
+
+	# Pads each batch during runtime.
+	def pad_dynamic(self, X, pos1, pos2, sub_type, obj_type, rel_alias):
 		seq_len, max_et, max_type, max_proby = 0, 0, 0, 0
-		subtype_len, objtype_len, proby_len = [], [], []
+		subtype_len, objtype_len, rel_alias_len = [], [], []
 
 		x_len = np.zeros((len(X)), np.int32)
 
-		for py in prob_y:
-			proby_len.append(len(py))
+		for py in rel_alias:
+			rel_alias_len.append(len(py))
 			max_proby = max(max_proby, len(py))
 
 		for typ in sub_type:
@@ -199,24 +199,24 @@ class RE_NN(Model):
 			seq_len  = max(seq_len, len(x))
 			x_len[i] = len(x)
 
-		x_pad,  _ 	= self.padData(X, seq_len)
-		pos1_pad,  _ 	= self.padData(pos1, seq_len)
-		pos2_pad,  _ 	= self.padData(pos2, seq_len)
-		subtype, _ 	= self.padData(sub_type, max_type)
-		objtype, _ 	= self.padData(obj_type, max_type)
-		proby_ind, _ 	= self.padData(prob_y, max_proby)
+		x_pad,  _ 	 = self.padData(X, seq_len)
+		pos1_pad,  _ 	 = self.padData(pos1, seq_len)
+		pos2_pad,  _ 	 = self.padData(pos2, seq_len)
+		subtype, _ 	 = self.padData(sub_type, max_type)
+		objtype, _ 	 = self.padData(obj_type, max_type)
+		rel_alias_ind, _ = self.padData(rel_alias, max_proby)
 
-		return x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, proby_ind, proby_len
+		return x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len
 
 
 	def create_feed_dict(self, batch, wLabels=True, dtype='train'):									# Where putting dropout for train?
-		X, Y, pos1, pos2, sent_num, sub_type, obj_type, prob_y = batch['X'], batch['Y'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['ProbY']
+		X, Y, pos1, pos2, sent_num, sub_type, obj_type, rel_alias = batch['X'], batch['Y'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['ProbY']
 		total_sents = len(batch['X'])
 		total_bags  = len(batch['Y'])
-		x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, proby_ind, proby_len = self.pad_dynamic(X, pos1, pos2, sub_type, obj_type, prob_y)
+		x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len = self.pad_dynamic(X, pos1, pos2, sub_type, obj_type, rel_alias)
 
-		y_hot = self.getOneHot(Y, 	self.num_class)
-		proby = self.getOneHot(prob_y, 	self.num_class-1, isprob=True)	# -1 because NA cannot be in proby
+		y_hot = self.getOneHot(Y, 		self.num_class)
+		proby = self.getOneHot(rel_alias, 	self.num_class-1, isprob=True)	# -1 because NA cannot be in proby
 
 		feed_dict = {}
 		feed_dict[self.input_x] 		= np.array(x_pad)
@@ -230,10 +230,10 @@ class RE_NN(Model):
 		feed_dict[self.total_sents]		= total_sents
 		feed_dict[self.total_bags]		= total_bags
 		feed_dict[self.sent_num]		= sent_num
-		feed_dict[self.input_subtype_len] 	= np.array(subtype_len) + 0.00000001
-		feed_dict[self.input_objtype_len] 	= np.array(objtype_len) + 0.00000001
-		feed_dict[self.input_proby_ind] 	= np.array(proby_ind)
-		feed_dict[self.input_proby_len] 	= np.array(proby_len) + 0.00000001
+		feed_dict[self.input_subtype_len] 	= np.array(subtype_len) + self.p.eps
+		feed_dict[self.input_objtype_len] 	= np.array(objtype_len) + self.p.eps
+		feed_dict[self.input_proby_ind] 	= np.array(rel_alias_ind)
+		feed_dict[self.input_proby_len] 	= np.array(rel_alias_len) + self.p.eps
 
 		if wLabels: feed_dict[self.input_y] 	= y_hot
 
@@ -290,6 +290,7 @@ class RE_NN(Model):
 				act_sum = tf.zeros([batch_size, max_nodes, gcn_dim])
 				for lbl in range(max_labels):
 
+					# Defining the layer and label specific parameters
 					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer), reuse=tf.AUTO_REUSE) as scope:
 						w_in   = tf.get_variable('w_in',  	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						w_out  = tf.get_variable('w_out', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
@@ -304,7 +305,7 @@ class RE_NN(Model):
 							b_gin  = tf.get_variable('b_gin',   initializer=np.zeros([1]).astype(np.float32),	regularizer=self.regularizer)
 							b_gout = tf.get_variable('b_gout',  initializer=np.zeros([1]).astype(np.float32),	regularizer=self.regularizer)
 
-
+					# Activation from in-edges
 					with tf.name_scope('in_arcs-%s_name-%s_layer-%d' % (lbl, name, layer)):
 						inp_in  = tf.tensordot(gcn_in, w_in, axes=[2,0]) + tf.expand_dims(b_in, axis=0)
 
@@ -329,6 +330,7 @@ class RE_NN(Model):
 						else:
 							in_act   = in_t
 
+					# Activation from out-edges
 					with tf.name_scope('out_arcs-%s_name-%s_layer-%d' % (lbl, name, layer)):
 						inp_out  = tf.tensordot(gcn_in, w_out, axes=[2,0]) + tf.expand_dims(b_out, axis=0)
 
@@ -350,6 +352,7 @@ class RE_NN(Model):
 						else:
 							out_act = out_t
 
+					# Activation from self-loop
 					with tf.name_scope('self_loop'):
 						inp_loop  = tf.tensordot(gcn_in, w_loop,  axes=[2,0])
 						if self.p.dropout != 1.0: inp_loop  = tf.nn.dropout(inp_loop, keep_prob=self.p.dropout)
@@ -361,6 +364,7 @@ class RE_NN(Model):
 						else:
 							loop_act = inp_loop
 
+					# Aggregating activations
 					act_sum += in_act + out_act + loop_act
 
 				gcn_out = tf.nn.relu(act_sum)
@@ -380,7 +384,6 @@ class RE_NN(Model):
 
 			pos1_embeddings = tf.get_variable('pos1_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 			pos2_embeddings = tf.get_variable('pos2_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
-
 
 		if self.p.RelAlias:
 			with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
@@ -417,7 +420,6 @@ class RE_NN(Model):
 		else:
 			de_out 		= lstm_out
 			de_out_dim	= lstm_out_dim
-
 
 		with tf.variable_scope('Word_attention', reuse=tf.AUTO_REUSE) as scope:
 			wrd_query    = tf.get_variable('wrd_query', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
@@ -478,8 +480,8 @@ class RE_NN(Model):
 			de_out_dim = de_out_dim + self.p.type_dim * 2
 
 		with tf.variable_scope('FC1', reuse=tf.AUTO_REUSE) as scope:
-			w_rel   = tf.get_variable('w_rel', [de_out_dim, self.num_class], initializer=tf.contrib.layers.xavier_initializer(), 			regularizer=self.regularizer)
-			b_rel   = tf.get_variable('b_rel', initializer=np.zeros([self.num_class]).astype(np.float32), 		regularizer=self.regularizer)
+			w_rel   = tf.get_variable('w_rel', [de_out_dim, self.num_class], initializer=tf.contrib.layers.xavier_initializer(), 		regularizer=self.regularizer)
+			b_rel   = tf.get_variable('b_rel', 				 initializer=np.zeros([self.num_class]).astype(np.float32), 	regularizer=self.regularizer)
 			nn_out = tf.nn.xw_plus_b(bag_rep, w_rel, b_rel)
 
 		with tf.name_scope('Accuracy') as scope:
@@ -502,7 +504,7 @@ class RE_NN(Model):
 
 	def add_optimizer(self, loss):
 		with tf.name_scope('Optimizer'):
-			if self.p.opt == 'adam' and not self.p.restore: 	
+			if self.p.opt == 'adam' and not self.p.restore:
 				optimizer = tf.train.AdamOptimizer(self.p.lr)
 			else:		
 				optimizer = tf.train.GradientDescentOptimizer(self.p.lr)
@@ -532,6 +534,7 @@ class RE_NN(Model):
 		self.merged_summ = tf.summary.merge_all()
 		self.summ_writer = None
 
+	# Evaluate model on valid/test data
 	def predict(self, sess, data, wLabels=True, shuffle=False, label='Evaluating on Test'):
 		losses, accuracies, results, y_pred, y, logit_list, y_actual_hot = [], [], [], [], [], [], []
 		bag_cnt = 0
@@ -558,6 +561,7 @@ class RE_NN(Model):
 
 		return np.mean(losses), results,  np.mean(accuracies)*100, y, y_pred, logit_list, y_actual_hot
 
+	# Runs one epoch of training
 	def run_epoch(self, sess, data, epoch, shuffle=True):
 		losses, accuracies = [], []
 		bag_cnt = 0
@@ -572,7 +576,7 @@ class RE_NN(Model):
 			bag_cnt += len(batch['sent_num'])
 
 			if step % 10 == 0:
-				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_train_acc))
+				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_train_loss))
 				self.summ_writer.add_summary(summary_str, epoch*len(self.data['train']) + bag_cnt)
 
 		accuracy = np.mean(accuracies) * 100.0
@@ -593,9 +597,9 @@ class RE_NN(Model):
 				if y_pred[i] == y_actual[i]:
 					true_pos += 1.0
 
-		precision 	= true_pos / (pos_pred + 1e-8)
-		recall 		= true_pos / (pos_gt + 1e-8)
-		f1 		= 2 * precision * recall / (precision + recall + 1e-8)
+		precision 	= true_pos / (pos_pred + self.p.eps)
+		recall 		= true_pos / (pos_gt + self.p.eps)
+		f1 		= 2 * precision * recall / (precision + recall + self.p.eps)
 
 		return precision, recall, f1
 
@@ -618,6 +622,7 @@ class RE_NN(Model):
 
 		return p_score(100), p_score(200), p_score(300)
 
+	# Trains the model and finally evaluates on test
 	def fit(self, sess):
 		self.summ_writer = tf.summary.FileWriter('tf_board/{}'.format(self.p.name), sess.graph)
 		saver     = tf.train.Saver()
@@ -631,24 +636,26 @@ class RE_NN(Model):
 
 		''' Train model '''
 		if not self.p.only_eval:
-			self.best_train_acc = 0.0
+			self.best_train_loss = 0.0
 			for epoch in range(self.p.max_epochs):
 				train_loss, train_acc = self.run_epoch(sess, self.data['train'], epoch)
 				self.logger.info('[Epoch {}]: Training Loss: {:.5}, Training Acc: {:.5}\n'.format(epoch, train_loss, train_acc))
 
-				# Store the model with best accuracy
-				if train_acc > self.best_train_acc:
-					self.best_train_acc = train_acc
+				# Store the model with least train loss
+				if train_acc < self.best_train_loss:
+					self.best_train_loss = train_acc
 					saver.save(sess=sess, save_path=save_path)
 		
 		''' Evaluation on Test '''
+		saver.restore(sess, save_path)
 		test_loss, test_pred, test_acc, y, y_pred, logit_list, y_hot = self.predict(sess, self.data['test'])
 		test_prec, test_rec, test_f1 				     = self.calc_prec_recall_f1(y, y_pred, 0)	# 0: ID for 'NA' relation
+
 		y_true   = np.array([e[1:] for e in y_hot]).  	 reshape((-1))
 		y_scores = np.array([e[1:] for e in logit_list]).reshape((-1))
 		area_pr  = average_precision_score(y_true, y_scores)
-		self.logger.info('Final results: Prec:{} | Rec:{} | F1:{} | Area:{}'.format(test_prec, test_rec, test_f1, area_pr))
 
+		self.logger.info('Final results: Prec:{} | Rec:{} | F1:{} | Area:{}'.format(test_prec, test_rec, test_f1, area_pr))
 		# Store predictions
 		pickle.dump({'logit_list': logit_list, 'y_hot': y_hot}, open("results/{}/precision_recall.pkl".format(self.p.name), 'wb'))
 
@@ -716,6 +723,7 @@ if __name__== "__main__":
 	parser.add_argument('-only_eval',dest="only_eval", 	action='store_true', 						help='Only Evaluate the pretrained model (skip training)')
 	parser.add_argument('-opt',	 dest="opt", 		default='adam', 						help='Optimizer to use for training')
 
+	parser.add_argument('-eps', 	 dest="eps", 		default=0.00000001,  		type=float, 			help='Value of epsilon')
 	parser.add_argument('-name', 	 dest="name", 		default='test_'+str(uuid.uuid4()),				help='Name of the run')
 	parser.add_argument('-seed', 	 dest="seed", 		default=1234, 			type=int,			help='Seed for randomization')
 	parser.add_argument('-logdir',	 dest="log_dir", 	default='./log/', 						help='Log directory')
