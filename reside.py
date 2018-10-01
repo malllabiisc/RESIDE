@@ -6,6 +6,7 @@ import tensorflow as tf
 Abbreviations used in variable names:
 	Type:  Entity type side informatoin
 	ProbY, RelAlias: Relation alias side information
+	NOTE: View this file with tab size 8.
 """
 
 class RE_NN(Model):
@@ -84,7 +85,7 @@ class RE_NN(Model):
 						data[dtype].append(res)
 		return data
 
-
+	# Required for P@N metric evaluation
 	def getPdata(self, data):
 		p_one = []
 		p_two = []
@@ -119,6 +120,7 @@ class RE_NN(Model):
 
 		return p_one, p_two
 
+	# Reads the data from pickle file
 	def load_data(self):
 		data = pickle.load(open(self.p.dataset, 'rb'))
 
@@ -126,9 +128,8 @@ class RE_NN(Model):
 		self.id2voc 	   = data['id2voc']
 		self.type2id 	   = data['type2id']
 		self.type_num	   = len(data['type2id'])
-		self.max_pos 	   = data['max_pos']
+		self.max_pos 	   = data['max_pos']						# Maximum position distance
 
-		# self.rel2id        = json.loads(open(self.p.rel2id_map).read())
 		self.num_class     = self.p.num_class
 		self.num_deLabel   = 1
 
@@ -216,7 +217,6 @@ class RE_NN(Model):
 
 		y_hot = self.getOneHot(Y, 	self.num_class)
 		proby = self.getOneHot(prob_y, 	self.num_class-1, isprob=True)	# -1 because NA cannot be in proby
-		# pdb.set_trace()
 
 		feed_dict = {}
 		feed_dict[self.input_x] 		= np.array(x_pad)
@@ -261,15 +261,9 @@ class RE_NN(Model):
 		for lbl in range(max_labels):
 			for i, edges in enumerate(edgeList):
 				in_ind_temp,  in_data_temp  = [], []
-				try:
-					for j, (src, dest, _, _) in enumerate(edges):
-						adj_mat_ind [lbl, i, j] = (src, dest)
-						adj_mat_data[lbl, i, j] = 1.0
-				except Exception as e:
-					exc_type, exc_obj, exc_tb = sys.exc_info()
-					fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-					print('\nException Type: {}, \nCause: {}, \nfname: {}, \nline_no: {}'.format(exc_type, e.args[0], fname, exc_tb.tb_lineno))
-					pdb.set_trace()
+				for j, (src, dest, _, _) in enumerate(edges):
+					adj_mat_ind [lbl, i, j] = (src, dest)
+					adj_mat_data[lbl, i, j] = 1.0
 
 		return adj_mat_ind, adj_mat_data
 
@@ -297,18 +291,18 @@ class RE_NN(Model):
 				for lbl in range(max_labels):
 
 					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer), reuse=tf.AUTO_REUSE) as scope:
-						w_in   = tf.get_variable('w_in')
-						b_in   = tf.get_variable('b_in')
-						w_out  = tf.get_variable('w_out')
-						b_out  = tf.get_variable('b_out')
-						w_loop = tf.get_variable('w_loop')
+						w_in   = tf.get_variable('w_in',  	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
+						w_out  = tf.get_variable('w_out', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
+						w_loop = tf.get_variable('w_loop', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
+						b_in   = tf.get_variable('b_in',   	initializer=np.zeros([1, gcn_dim]).astype(np.float32),	regularizer=self.regularizer)
+						b_out  = tf.get_variable('b_out',  	initializer=np.zeros([1, gcn_dim]).astype(np.float32),	regularizer=self.regularizer)
 
 						if w_gating:
-							w_gin  = tf.get_variable('w_gin')
-							b_gin  = tf.get_variable('b_gin')
-							w_gout = tf.get_variable('w_gout')
-							b_gout = tf.get_variable('b_gout')
-							w_gloop = tf.get_variable('w_gloop')
+							w_gin  = tf.get_variable('w_gin',   [in_dim, 1], initializer=tf.contrib.layers.xavier_initializer(),	regularizer=self.regularizer)
+							w_gout = tf.get_variable('w_gout',  [in_dim, 1], initializer=tf.contrib.layers.xavier_initializer(),	regularizer=self.regularizer)
+							w_gloop = tf.get_variable('w_gloop',[in_dim, 1], initializer=tf.contrib.layers.xavier_initializer(),	regularizer=self.regularizer)
+							b_gin  = tf.get_variable('b_gin',   initializer=np.zeros([1]).astype(np.float32),	regularizer=self.regularizer)
+							b_gout = tf.get_variable('b_gout',  initializer=np.zeros([1]).astype(np.float32),	regularizer=self.regularizer)
 
 
 					with tf.name_scope('in_arcs-%s_name-%s_layer-%d' % (lbl, name, layer)):
@@ -374,97 +368,24 @@ class RE_NN(Model):
 
 		return out
 
-	# For handling TensorFlow issue: #
-	def initialize_variables(self):
-		def xavier(shape, isRelu = False):
-			if isRelu: return np.random.randn(*shape).astype(np.float32) * np.sqrt(2.0 / (shape[0]))
-			else:      return np.random.randn(*shape).astype(np.float32) * np.sqrt(1.0 / (shape[0]))
-
-		inits = {}
-
-		with tf.variable_scope('Embeddings') as scope:
-			embed_init 	 = getEmbeddings(self.p.embed_loc, self.wrd_list, self.p.embed_dim)
-			wrd_embeddings   = tf.get_variable('embeddings',      initializer=embed_init, trainable=True, regularizer=self.regularizer)
-			pos1_embeddings  = tf.get_variable('pos1_embeddings', initializer=xavier([self.max_pos, self.p.pos_dim]), trainable=True,   regularizer=self.regularizer)
-			pos2_embeddings  = tf.get_variable('pos2_embeddings', initializer=xavier([self.max_pos, self.p.pos_dim]), trainable=True,   regularizer=self.regularizer)
-
-		if self.p.RelAlias:
-			with tf.variable_scope('AliasInfo') as scope:
-				_alias_embeddings = tf.get_variable('alias_embeddings', initializer=xavier([self.num_class-1, self.p.alias_dim]), trainable=True, regularizer=self.regularizer)
-
-		with tf.variable_scope('Bi-LSTM') as scope:
-			fw_cell      = tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='FW_GRU')
-			bk_cell      = tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='BW_GRU')
-
-		# GCN Parmaeters
-		name 	= 'GCN_DE'
-		if self.p.lstm == 'add': in_dim = self.p.lstm_dim
-		else: 			 in_dim = self.p.lstm_dim*2
-		gcn_dim = self.p.de_gcn_dim
-
-		if self.p.de_gcn:
-			gcn_in_dim = in_dim
-
-			for layer in range(self.p.de_layers):
-				with tf.name_scope('%s-%d' % (name, layer)):
-					if layer > 0: gcn_in_dim = gcn_dim
-
-					for lbl in range(self.num_deLabel):
-
-						with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer)) as scope:
-							w_in   = tf.get_variable('w_in',  	initializer=xavier([gcn_in_dim, gcn_dim], isRelu = True), 	regularizer=self.regularizer)
-							b_in   = tf.get_variable('b_in',   	initializer=np.zeros([1, gcn_dim]).astype(np.float32),	regularizer=self.regularizer)
-							w_out  = tf.get_variable('w_out', 	initializer=xavier([gcn_in_dim, gcn_dim], isRelu = True), 	regularizer=self.regularizer)
-							b_out  = tf.get_variable('b_out',  	initializer=np.zeros([1, gcn_dim]).astype(np.float32),	regularizer=self.regularizer)
-							w_loop = tf.get_variable('w_loop', 	initializer=xavier([gcn_in_dim, gcn_dim], isRelu = True), 	regularizer=self.regularizer)
-
-							if self.p.wGate:
-								w_gin  = tf.get_variable('w_gin',   initializer=xavier([gcn_in_dim, 1], isRelu = True),	regularizer=self.regularizer)
-								b_gin  = tf.get_variable('b_gin',   initializer=np.zeros([1]).astype(np.float32),	regularizer=self.regularizer)
-								w_gout = tf.get_variable('w_gout',  initializer=xavier([gcn_in_dim, 1], isRelu = True),	regularizer=self.regularizer)
-								b_gout = tf.get_variable('b_gout',  initializer=np.zeros([1]).astype(np.float32),	regularizer=self.regularizer)
-								w_gloop = tf.get_variable('w_gloop',initializer=xavier([gcn_in_dim, 1], isRelu = True),	regularizer=self.regularizer)
-
-
-
-		if   self.p.de_gcn:  de_out_dim = self.p.de_gcn_dim + in_dim
-		else: 		     de_out_dim = in_dim
-
-		with tf.variable_scope('Word_attention') as scope:
-			wrd_query    = tf.get_variable('wrd_query', initializer=xavier([de_out_dim, 1]))
-
-		with tf.variable_scope('TypeInfo') as scope:
-			self.type_dim    = self.p.type_dim
-			_type_embeddings = tf.get_variable('type_embeddings', initializer=xavier([self.type_num, self.type_dim]), trainable=True, regularizer=self.regularizer)
-
-		with tf.variable_scope('Sentence_attention') as scope:
-			if self.p.RelAlias: de_out_dim += self.p.alias_dim
-			if self.p.Type:  de_out_dim += 2*self.type_dim
-
-			sent_atten_q = tf.get_variable('sent_atten_q', initializer=xavier([de_out_dim, 1]))
-
-
-		with tf.variable_scope('FC1') as scope:
-			w_rel   = tf.get_variable('w_rel', initializer=xavier([de_out_dim, self.num_class]), 			regularizer=self.regularizer)
-			b_rel   = tf.get_variable('b_rel', initializer=np.zeros([self.num_class]).astype(np.float32), 		regularizer=self.regularizer)
-
 
 	def add_model(self):
 		in_wrds, in_pos1, in_pos2 = self.input_x, self.input_pos1, self.input_pos2
 
 		with tf.variable_scope('Embeddings', reuse=tf.AUTO_REUSE) as scope:
+			embed_init 	 = getEmbeddings(self.p.embed_loc, self.wrd_list, self.p.embed_dim)
+			_wrd_embeddings = tf.get_variable('embeddings', initializer=embed_init, trainable=True, regularizer=self.regularizer)
 			wrd_pad  	= tf.zeros([1, self.p.embed_dim])
-			_wrd_embeddings = tf.get_variable('embeddings')
 			wrd_embeddings  = tf.concat([wrd_pad, _wrd_embeddings], axis=0)
 
-			pos1_embeddings = tf.get_variable('pos1_embeddings')
-			pos2_embeddings = tf.get_variable('pos2_embeddings')
+			pos1_embeddings = tf.get_variable('pos1_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
+			pos2_embeddings = tf.get_variable('pos2_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 
 
 		if self.p.RelAlias:
 			with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
 				pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
-				_alias_embeddings = tf.get_variable('alias_embeddings')
+				_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
 				alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
 
 				alias_embed = tf.nn.embedding_lookup(alias_embeddings, self.input_proby_ind)
@@ -499,7 +420,7 @@ class RE_NN(Model):
 
 
 		with tf.variable_scope('Word_attention', reuse=tf.AUTO_REUSE) as scope:
-			wrd_query    = tf.get_variable('wrd_query')
+			wrd_query    = tf.get_variable('wrd_query', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 			sent_reps    = tf.reshape(
 						tf.matmul(
 							tf.reshape(
@@ -519,10 +440,10 @@ class RE_NN(Model):
 				sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
 				de_out_dim += self.p.alias_dim
 
-		if not self.p.Type:
+		if self.p.Type:
 			with tf.variable_scope('TypeInfo', reuse=tf.AUTO_REUSE) as scope:
-				pad_type_embed   = tf.zeros([1, self.type_dim],     dtype=tf.float32, name='type_pad')
-				_type_embeddings = tf.get_variable('type_embeddings')
+				pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
+				_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
 				type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
 
 				subtype = tf.nn.embedding_lookup(type_embeddings,  self.input_subtype)
@@ -534,7 +455,7 @@ class RE_NN(Model):
 				type_info = tf.concat([subtype_av, objtype_av], axis=1)
 
 		with tf.variable_scope('Sentence_attention', reuse=tf.AUTO_REUSE) as scope:
-			sent_atten_q = tf.get_variable('sent_atten_q')
+			sent_atten_q = tf.get_variable('sent_atten_q', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 
 			def getSentAtten(num):
 				num_sents  	= num[1] - num[0]
@@ -554,11 +475,11 @@ class RE_NN(Model):
 
 		if self.p.Type:
 			bag_rep    = tf.concat([bag_rep, type_info], axis=1)
-			de_out_dim = de_out_dim + self.type_dim * 2
+			de_out_dim = de_out_dim + self.p.type_dim * 2
 
 		with tf.variable_scope('FC1', reuse=tf.AUTO_REUSE) as scope:
-			w_rel   = tf.get_variable('w_rel')
-			b_rel   = tf.get_variable('b_rel')
+			w_rel   = tf.get_variable('w_rel', [de_out_dim, self.num_class], initializer=tf.contrib.layers.xavier_initializer(), 			regularizer=self.regularizer)
+			b_rel   = tf.get_variable('b_rel', initializer=np.zeros([self.num_class]).astype(np.float32), 		regularizer=self.regularizer)
 			nn_out = tf.nn.xw_plus_b(bag_rep, w_rel, b_rel)
 
 		with tf.name_scope('Accuracy') as scope:
@@ -567,7 +488,7 @@ class RE_NN(Model):
 			y_actual = tf.argmax(self.input_y, axis=1)
 			accuracy = tf.reduce_mean(tf.cast(tf.equal(y_pred, y_actual), tf.float32))
 
-		'''
+		''' Debugging command :
 			res  = debug_nn([de_out], self.create_feed_dict( next(self.getBatches(self.data['train'])) ) ); pdb.set_trace()
 		'''
 		return nn_out, accuracy
@@ -579,10 +500,12 @@ class RE_NN(Model):
 			if self.regularizer != None: loss += tf.contrib.layers.apply_regularization(self.regularizer, tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
 		return loss
 
-	def add_optimizer(self, loss, isAdam=True):
+	def add_optimizer(self, loss):
 		with tf.name_scope('Optimizer'):
-			if isAdam: 	optimizer = tf.train.AdamOptimizer(self.p.lr)
-			else:		optimizer = tf.train.GradientDescentOptimizer(self.p.lr)
+			if self.p.opt == 'adam' and not self.p.restore: 	
+				optimizer = tf.train.AdamOptimizer(self.p.lr)
+			else:		
+				optimizer = tf.train.GradientDescentOptimizer(self.p.lr)
 			train_op  = optimizer.minimize(loss)
 		return train_op
 
@@ -597,22 +520,20 @@ class RE_NN(Model):
 		else: 			self.regularizer = tf.contrib.layers.l2_regularizer(scale=self.p.l2)
 
 		self.load_data()
-		self.initialize_variables()
 		self.add_placeholders()
 
 		nn_out, self.accuracy = self.add_model()
 
 		self.loss      	= self.add_loss(nn_out)
 		self.logits  	= tf.nn.softmax(nn_out)
-		if self.p.opt == 'adam': self.train_op = self.add_optimizer(self.loss)
-		else:			 self.train_op = self.add_optimizer(self.loss, isAdam=False)
+		self.train_op   = self.add_optimizer(self.loss)
 
 		tf.summary.scalar('accmain', self.accuracy)
 		self.merged_summ = tf.summary.merge_all()
 		self.summ_writer = None
 
-	def predict(self, sess, data, wLabels=True, shuffle=False):
-		losses, accuracies, results, y_pred, y, logit_list, y_actual_hot, wrd_attens = [], [], [], [], [], [], [], []
+	def predict(self, sess, data, wLabels=True, shuffle=False, label='Evaluating on Test'):
+		losses, accuracies, results, y_pred, y, logit_list, y_actual_hot = [], [], [], [], [], [], []
 		bag_cnt = 0
 
 		for step, batch in enumerate(self.getBatches(data, shuffle)):
@@ -630,12 +551,12 @@ class RE_NN(Model):
 
 			results.append(pred_ind)
 
-			if step % 10 == 0:
-				self.logger.info('Evaluating Test/Valid ({}/{}):\t{:.5}\t{:.5}\t{}'.format(bag_cnt, len(self.data['test']), np.mean(accuracies)*100, np.mean(losses), self.p.name))
+			if step % 100 == 0:
+				self.logger.info('{} ({}/{}):\t{:.5}\t{:.5}\t{}'.format(label, bag_cnt, len(self.data['test']), np.mean(accuracies)*100, np.mean(losses), self.p.name))
 
-		self.logger.info('Test/Valid Accuracy: {}'.format(accuracy))
+		self.logger.info('Test Accuracy: {}'.format(accuracy))
 
-		return np.mean(losses), results,  np.mean(accuracies)*100, y, y_pred, logit_list, y_actual_hot, wrd_attens
+		return np.mean(losses), results,  np.mean(accuracies)*100, y, y_pred, logit_list, y_actual_hot
 
 	def run_epoch(self, sess, data, epoch, shuffle=True):
 		losses, accuracies = [], []
@@ -651,13 +572,14 @@ class RE_NN(Model):
 			bag_cnt += len(batch['sent_num'])
 
 			if step % 10 == 0:
-				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_val_area))
+				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_train_acc))
 				self.summ_writer.add_summary(summary_str, epoch*len(self.data['train']) + bag_cnt)
 
 		accuracy = np.mean(accuracies) * 100.0
 		self.logger.info('Training Loss:{}, Accuracy: {}'.format(np.mean(losses), accuracy))
 		return np.mean(losses), accuracy
 
+	# Calculates precision recall and F1 score
 	def calc_prec_recall_f1(self, y_actual, y_pred, none_id):
 		pos_pred, pos_gt, true_pos = 0.0, 0.0, 0.0
 
@@ -678,8 +600,8 @@ class RE_NN(Model):
 		return precision, recall, f1
 
 	# Computes P@N for N = 100, 200, and 300
-	def getPscore(self, data):
-		val_loss, val_pred, val_acc, y, y_pred, logit_list, y_hot, wrd_attens = self.predict(sess, data)
+	def getPscore(self, data, label='P@N Evaluation'):
+		test_loss, test_pred, test_acc, y, y_pred, logit_list, y_hot = self.predict(sess, data, label)
 
 		y_true   = np.array([e[1:] for e in y_hot]).  	 reshape((-1))
 		y_scores = np.array([e[1:] for e in logit_list]).reshape((-1))
@@ -688,85 +610,62 @@ class RE_NN(Model):
 		allans  = np.reshape(y_true, (-1))
 		order   = np.argsort(-allprob)
 
-		# P@100
-		top100 = order[:100]
-		correct_num_100 = 0.00
-		for i in top100:
-			if allans[i] == 1:
-				correct_num_100 += 1.00
+		def p_score(n):
+			corr_num = 0.0
+			for i in order[:n]:
+				corr_num += 1.0 if (allans[i] == 1) else 0
+			return corr_num / n
 
-		p100 = correct_num_100 / 100.00
-
-		# P@200
-		top200 = order[:200]
-		correct_num_200 = 0.00
-		for i in top200:
-			if allans[i] == 1:
-				correct_num_200 += 1.00
-
-		p200 = correct_num_200 / 200.00
-
-		# P@300
-		top300 = order[:300]
-		correct_num_300 = 0.00
-		for i in top300:
-			if allans[i] == 1:
-				correct_num_300 += 1.00
-
-		p300 = correct_num_300 / 300.00
-
-		return p100, p200, p300
+		return p_score(100), p_score(200), p_score(300)
 
 	def fit(self, sess):
-		self.summ_writer = tf.summary.FileWriter("tf_board/RE_NN/" + self.p.name, sess.graph)
+		self.summ_writer = tf.summary.FileWriter('tf_board/{}'.format(self.p.name), sess.graph)
 		saver     = tf.train.Saver()
-		save_dir  = 'checkpoints/' + self.p.name + '/'
-		if not os.path.exists(save_dir): os.makedirs(save_dir)
-		save_path = os.path.join(save_dir, 'best_validation')
-		self.val_areas = []
+		save_dir  = 'checkpoints/{}/'.format(self.p.name); make_dir(save_dir)
+		res_dir   = 'results/{}/'.format(self.p.name);     make_dir(res_dir)
+		save_path = os.path.join(save_dir, 'best_model')
+		
+		# Restore previously trained model
+		if self.p.restore: 
+			saver.restore(sess, save_path)
 
-		if self.p.restore: saver.restore(sess, save_path)
+		''' Train model '''
+		if not self.p.only_eval:
+			self.best_train_acc = 0.0
+			for epoch in range(self.p.max_epochs):
+				train_loss, train_acc = self.run_epoch(sess, self.data['train'], epoch)
+				self.logger.info('[Epoch {}]: Training Loss: {:.5}, Training Acc: {:.5}\n'.format(epoch, train_loss, train_acc))
 
-		self.best_val_area  = 0.0
-		self.best_train_acc = 0.0
-		self.best_prf 	    = None
+				# Store the model with best accuracy
+				if train_acc > self.best_train_acc:
+					self.best_train_acc = train_acc
+					saver.save(sess=sess, save_path=save_path)
+		
+		''' Evaluation on Test '''
+		test_loss, test_pred, test_acc, y, y_pred, logit_list, y_hot = self.predict(sess, self.data['test'])
+		test_prec, test_rec, test_f1 				     = self.calc_prec_recall_f1(y, y_pred, 0)	# 0: ID for 'NA' relation
+		y_true   = np.array([e[1:] for e in y_hot]).  	 reshape((-1))
+		y_scores = np.array([e[1:] for e in logit_list]).reshape((-1))
+		area_pr  = average_precision_score(y_true, y_scores)
+		self.logger.info('Final results: Prec:{} | Rec:{} | F1:{} | Area:{}'.format(test_prec, test_rec, test_f1, area_pr))
 
-		for epoch in range(self.p.max_epochs):
-			self.logger.info('Epoch: {}'.format(epoch))
+		# Store predictions
+		pickle.dump({'logit_list': logit_list, 'y_hot': y_hot}, open("results/{}/precision_recall.pkl".format(self.p.name), 'wb'))
 
-			train_loss, train_acc 				   	  	      = self.run_epoch(sess, self.data['train'], epoch)
-			val_loss, val_pred, val_acc, y, y_pred, logit_list, y_hot, wrd_attens = self.predict  (sess, self.data['test'])
+		''' P@N Evaluation '''
 
-			val_prec, val_rec, val_f1 = self.calc_prec_recall_f1(y, y_pred, 0)	# 0: self.rel2id['NA']
-			y_true   = np.array([e[1:] for e in y_hot]).  	 reshape((-1))
-			y_scores = np.array([e[1:] for e in logit_list]).reshape((-1))
-
-			area_pr  = average_precision_score(y_true, y_scores)
-			self.val_areas.append(area_pr)
-
-			self.logger.info('Main result: Prec:{} | Rec:{} | F1:{} | Area:{}'.format(val_prec, val_rec, val_f1, area_pr))
-
-			if area_pr > self.best_val_area:
-				self.best_val_area  = area_pr
-				self.best_train_acc = train_acc
-				self.best_prf 	    = {'prec': val_prec, 'rec': val_rec, 'f1': val_f1, 'area_pr': area_pr}
-				pickle.dump({'logit_list': logit_list, 'y_hot': y_hot}, open("tf_board/RE_NN/{}/best_preds.pkl".format(self.p.name), 'wb'))
-				pickle.dump(wrd_attens, open("tf_board/RE_NN/{}/word_attens.pkl".format(self.p.name), 'wb'))
-				saver.save(sess=sess, save_path=save_path)
-
-			self.logger.info('[Epoch {}]: Training Loss: {:.5}, Training Acc: {:.5}, Valid Loss: {:.5}, Valid Acc: {:.5} Best Acc: {:.5}\n'.format(epoch, train_loss, train_acc, val_loss, val_acc, self.best_val_area))
-			self.logger.info(self.best_prf)
-
-
-		one_100, one_200, one_300 = self.getPscore(self.test_one)
+		# P@1
+		one_100, one_200, one_300 = self.getPscore(self.test_one, label='P@1 Evaluation')
 		self.logger.info('TEST_ONE: P@100: {}, P@200: {}, P@300: {}'.format(one_100, one_200, one_300))
 		one_avg = (one_100 + one_200 + one_300)/3
 
-		two_100, two_200, two_300 = self.getPscore(self.test_two)
+		# P@2
+		two_100, two_200, two_300 = self.getPscore(self.test_two, label='P@2 Evaluation')
 		self.logger.info('TEST_TWO: P@100: {}, P@200: {}, P@300: {}'.format(two_100, two_200, two_300))
 		two_avg = (two_100 + two_200 + two_300)/3
 
-		all_100, all_200, all_300 = self.getPscore(self.data['test'])
+		# P@All
+		all_100, all_200, all_300 = self.getPscore(self.data['test'], label='P@All Evaluation')
 		self.logger.info('TEST_THREE: P@100: {}, P@200: {}, P@300: {}'.format(all_100, all_200, all_300))
 		all_avg = (all_100 + all_200 + all_300)/3
 
@@ -774,15 +673,15 @@ class RE_NN(Model):
 				'one_100':  one_100,
 				'one_200':  one_200,
 				'one_300':  one_300,
-				'mean_one': avg_one,
+				'mean_one': one_avg,
 				'two_100':  two_100,
 				'two_200':  two_200,
 				'two_300':  two_300,
-				'mean_two': avg_two,
+				'mean_two': two_avg,
 				'all_100':  all_100,
 				'all_200':  all_200,
 				'all_300':  all_300,
-				'mean_all': avg_all,
+				'mean_all': all_avg,
 		})
 
 
@@ -792,19 +691,18 @@ if __name__== "__main__":
 
 	parser.add_argument('-data', 	 dest="dataset", 	required=True,							help='Dataset to use')
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
-	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=10, 			type=int, 			help='Dimension of positional embeddings')
+	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=16, 			type=int, 			help='Dimension of positional embeddings')
 	parser.add_argument('-lstm',  	 dest="lstm", 		default='concat',	 					help='Bi-LSTM add/concat')
-	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=128,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
+	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
 	parser.add_argument('-num_class',dest="num_class", 	default=53,   	type=int, 					help='num classes for the dataset')
 
-	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_true',   						help='Decide to include GCN in the model')
+	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_false',   					help='Decide to include GCN in the model')
 	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Decide to include gates in GCN')
-	parser.add_argument('-Type', 	 dest="Type", 		action='store_true',						help='Decide to include Entity Type Side Information')
-	parser.add_argument('-RelAlias', dest="RelAlias", 	action='store_true', 						help='Decide to include Relation Alias Side Information')
 
-	parser.add_argument('-type_dim', dest="type_dim", 	default=64,   			type=int, 			help='Type dimension')
-	parser.add_argument('-alias_dim',dest="alias_dim", 	default=16,   			type=int, 			help='Alias dimension')
-	parser.add_argument('-de_dim',   dest="de_gcn_dim", 	default=32,   			type=int, 			help='Hidden state dimension of GCN over dependency tree')
+
+	parser.add_argument('-type_dim', dest="type_dim", 	default=50,   			type=int, 			help='Type dimension')
+	parser.add_argument('-alias_dim',dest="alias_dim", 	default=32,   			type=int, 			help='Alias dimension')
+	parser.add_argument('-de_dim',   dest="de_gcn_dim", 	default=16,   			type=int, 			help='Hidden state dimension of GCN over dependency tree')
 	parser.add_argument('-de_layer', dest="de_layers", 	default=1,   			type=int, 			help='Number of layers in GCN over dependency tree')
 	parser.add_argument('-drop',	 dest="dropout", 	default=0.8,  			type=float,			help='Dropout for full connected layer')
 	parser.add_argument('-rdrop',	 dest="rec_dropout", 	default=0.8,  			type=float,			help='Recurrent dropout for LSTM')
@@ -815,26 +713,28 @@ if __name__== "__main__":
 	parser.add_argument('-batch', 	 dest="batch_size", 	default=32,   			type=int, 			help='Batch size')
 	parser.add_argument('-chunk', 	 dest="chunk_size", 	default=1000,   		type=int, 			help='Chunk size')
 	parser.add_argument('-restore',	 dest="restore", 	action='store_true', 						help='Restore from the previous best saved model')
+	parser.add_argument('-only_eval',dest="only_eval", 	action='store_true', 						help='Only Evaluate the pretrained model (skip training)')
 	parser.add_argument('-opt',	 dest="opt", 		default='adam', 						help='Optimizer to use for training')
 
 	parser.add_argument('-name', 	 dest="name", 		default='test_'+str(uuid.uuid4()),				help='Name of the run')
 	parser.add_argument('-seed', 	 dest="seed", 		default=1234, 			type=int,			help='Seed for randomization')
-	parser.add_argument('-logdir',	 dest="log_dir", 	default='/scratchd/home/shikhar/entity_linker/src/cesi/log/', 	help='Log directory')
-	parser.add_argument('-config',	 dest="config_dir", 	default='/scratchd/home/shikhar/entity_linker/src/config/', 	help='Config directory')
-	#parser.add_argument('-logdir',	 dest="log_dir", 	default='./log/', 						help='Log directory')
-	#parser.add_argument('-config',	 dest="config_dir", 	default='./config/', 						help='Config directory')
+	parser.add_argument('-logdir',	 dest="log_dir", 	default='./log/', 						help='Log directory')
+	parser.add_argument('-config',	 dest="config_dir", 	default='./config/', 						help='Config directory')
 	parser.add_argument('-embed_loc',dest="embed_loc", 	default='./glove/glove.6B.50d_word2vec.txt', 			help='Log directory')
 	parser.add_argument('-embed_dim',dest="embed_dim", 	default=50, type=int,						help='Dimension of embedding')
 	args = parser.parse_args()
 
-	args.embed_dim = int(args.embed_init.split('_')[1])
 	if not args.restore: args.name = args.name + '_' + time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")
 
+	# Set GPU to use
+	set_gpu(args.gpu)
+
+	# Set seed 
 	tf.set_random_seed(args.seed)
 	random.seed(args.seed)
 	np.random.seed(args.seed)
-	set_gpu(args.gpu)
 
+	# Create model computational graph
 	model  = RE_NN(args)
 
 	config = tf.ConfigProto()
