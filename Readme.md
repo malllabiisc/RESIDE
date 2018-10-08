@@ -67,4 +67,4 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 
 
-For any clarification, please contact [shikhar@iisc.ac.in](shikhar@iisc.ac.in).
+For any clarification, please contact [shikhar@iisc.ac.in](http://shikhar-vashishth.github.io).
