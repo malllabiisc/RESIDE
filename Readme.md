@@ -13,7 +13,45 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 ### Dataset:
 
 - We use [Riedel NYT](http://iesl.cs.umass.edu/riedel/ecml/) and [Google IISc Distant Supervision (GIDS)](https://arxiv.org/pdf/1804.06987.pdf) dataset​ for evaluation.
-- The processed version of the datasets can be downloaded from [here](https://drive.google.com/file/d/1brGCxXm2ofbF_0HP4myfBSHphGg4v6BS/view?usp=sharing). 
+
+- The processed version of the datasets can be downloaded from [here](https://drive.google.com/file/d/1brGCxXm2ofbF_0HP4myfBSHphGg4v6BS/view?usp=sharing). The structure of the processed input data is as follows.
+
+  ```java
+  {
+      "voc2id":   {"w1": 0, "w2": 1, ...},
+      "type2id":  {"type1": 0, "type2": 1 ...},
+      "max_pos": 123,
+      "train": [
+          {
+              "X":        [[s1_w1, s1_w2, ...], [s2_w1, s2_w2, ...], ...],
+              "Y":        [bag_label],
+  			"Pos1":     [[s1_p1_1, sent1_p1_2, ...], [s2_p1_1, s2_p1_2, ...], ...],
+              "Pos2":     [[s1_p2_1, sent1_p2_2, ...], [s2_p2_1, s2_p2_2, ...], ...],
+              "SubPos":   [s1_sub, s2_sub, ...],
+              "ObjPos":   [s1_obj, s2_obj, ...],
+              "SubType":  [s1_subType, s2_subType, ...],
+              "ObjType":  [s1_objType, s2_objType, ...],
+              "ProbY":    [rel_alias1, rel_alias2, ...]
+              "DepEdges": [[s1_dep_edges], [s2_dep_edges] ...]
+          },
+          {}, ...
+      ],
+      "test":  { same as "train"},
+      "valid": { same as "train"},
+  }
+  ```
+
+  * `voc2id` is the mapping of words to their unique identifier
+  * `type2id` is the maping of entity type to their unique identifier.
+  * `max_pos` is the maximum position to consider for positional embeddings.
+  * Each entry of `train`, `test` and `valid` is a bag of sentences, where
+    * `X` denotes the sentences in bag as the list of list of word indices.
+    * `Y` is the relation expressed by the sentences in the bag.
+    * `Pos1` and `Pos2` are position of each word in sentences wrt to target entity 1 and entity 2.
+    * `SubPos` and `ObjPos` contains the position of the target entity 1 and entity 2 in each sentence.
+    * `SubType` and `ObjType` contains the target entity 1 and entity 2 type information obatined from KG.
+    * `ProbY` is the relation alias side information (refer paper) for the bag.
+    * `DepEdges` is the edgelist of dependency parse for each sentence (required for GCN).
 
 ### Evaluate pretrained model:
 
@@ -26,3 +64,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
   ```shell
   python reside.py -data data/riedel_processed.pkl -name new_run
   ```
+
+
+
+For any clarification, please contact [shikhar@iisc.ac.in](shikhar@iisc.ac.in).
