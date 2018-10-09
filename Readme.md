@@ -25,7 +25,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
           {
               "X":        [[s1_w1, s1_w2, ...], [s2_w1, s2_w2, ...], ...],
               "Y":        [bag_label],
-  			"Pos1":     [[s1_p1_1, sent1_p1_2, ...], [s2_p1_1, s2_p1_2, ...], ...],
+              "Pos1":     [[s1_p1_1, sent1_p1_2, ...], [s2_p1_1, s2_p1_2, ...], ...],
               "Pos2":     [[s1_p2_1, sent1_p2_2, ...], [s2_p2_1, s2_p2_2, ...], ...],
               "SubPos":   [s1_sub, s2_sub, ...],
               "ObjPos":   [s1_obj, s2_obj, ...],
@@ -67,4 +67,4 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 
 
-For any clarification, please contact [shikhar@iisc.ac.in](shikhar@iisc.ac.in).
+For any clarification, please contact [shikhar@iisc.ac.in](http://shikhar-vashishth.github.io).
