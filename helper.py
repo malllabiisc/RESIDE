@@ -47,7 +47,7 @@ def debug_nn(res_list, feed_dict):
 
 # Creates logger
 def get_logger(name, log_dir, config_dir):
-	make_dir(self.p.log_dir)
+	make_dir(log_dir)
 	config_dict = json.load(open(config_dir + 'log_config.json'))
 	config_dict['handlers']['file_handler']['filename'] = log_dir + name.replace('/', '-')
 	logging.config.dictConfig(config_dict)

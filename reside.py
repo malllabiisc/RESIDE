@@ -211,6 +211,7 @@ class RESIDE(Model):
 
 	def create_feed_dict(self, batch, wLabels=True, dtype='train'):									# Where putting dropout for train?
 		X, Y, pos1, pos2, sent_num, sub_type, obj_type, rel_alias = batch['X'], batch['Y'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['ProbY']
+		pdb.set_trace()
 		total_sents = len(batch['X'])
 		total_bags  = len(batch['Y'])
 		x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len = self.pad_dynamic(X, pos1, pos2, sub_type, obj_type, rel_alias)
@@ -698,18 +699,20 @@ if __name__== "__main__":
 
 	parser.add_argument('-data', 	 dest="dataset", 	required=True,							help='Dataset to use')
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
-	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=16, 			type=int, 			help='Dimension of positional embeddings')
-	parser.add_argument('-lstm',  	 dest="lstm", 		default='concat',	 					help='Bi-LSTM add/concat')
-	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
 	parser.add_argument('-num_class',dest="num_class", 	default=53,   	type=int, 					help='num classes for the dataset')
 
+	parser.add_argument('-lstm',  	 dest="lstm", 		default='concat', 		choices=['add', 'concat'],	help='Bi-LSTM add/concat')
 	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_false',   					help='Decide to include GCN in the model')
 	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Decide to include gates in GCN')
+	parser.add_argument('-Type', 	 dest="Type", 		action='store_true',						help='Decide to include Entity Type Side Information')
+	parser.add_argument('-RelAlias', dest="RelAlias", 	action='store_true', 						help='Decide to include Relation Alias Side Information')
 
-
+	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
+	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=16, 			type=int, 			help='Dimension of positional embeddings')
 	parser.add_argument('-type_dim', dest="type_dim", 	default=50,   			type=int, 			help='Type dimension')
 	parser.add_argument('-alias_dim',dest="alias_dim", 	default=32,   			type=int, 			help='Alias dimension')
 	parser.add_argument('-de_dim',   dest="de_gcn_dim", 	default=16,   			type=int, 			help='Hidden state dimension of GCN over dependency tree')
+
 	parser.add_argument('-de_layer', dest="de_layers", 	default=1,   			type=int, 			help='Number of layers in GCN over dependency tree')
 	parser.add_argument('-drop',	 dest="dropout", 	default=0.8,  			type=float,			help='Dropout for full connected layer')
 	parser.add_argument('-rdrop',	 dest="rec_dropout", 	default=0.8,  			type=float,			help='Recurrent dropout for LSTM')
