@@ -9,7 +9,7 @@ Abbreviations used in variable names:
 NOTE: View this file with tab size 8.
 """
 
-class RE_NN(Model):
+class RESIDE(Model):
 
 	# Generates batches of multiple bags
 	def getBatches(self, data, shuffle = True):
@@ -743,7 +743,7 @@ if __name__== "__main__":
 	np.random.seed(args.seed)
 
 	# Create model computational graph
-	model  = RE_NN(args)
+	model  = RESIDE(args)
 
 	config = tf.ConfigProto()
 	config.gpu_options.allow_growth=True
