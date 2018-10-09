@@ -694,7 +694,7 @@ class RESIDE(Model):
 
 if __name__== "__main__":
 
-	parser = argparse.ArgumentParser(description='Main Neural Network for Time Stamping Documents')
+	parser = argparse.ArgumentParser(description='Improving Distantly-Supervised Neural Relation Extraction using Side Information')
 
 	parser.add_argument('-data', 	 dest="dataset", 	required=True,							help='Dataset to use')
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
