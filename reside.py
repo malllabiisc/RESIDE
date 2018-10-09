@@ -211,7 +211,6 @@ class RESIDE(Model):
 
 	def create_feed_dict(self, batch, wLabels=True, dtype='train'):									# Where putting dropout for train?
 		X, Y, pos1, pos2, sent_num, sub_type, obj_type, rel_alias = batch['X'], batch['Y'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['ProbY']
-		pdb.set_trace()
 		total_sents = len(batch['X'])
 		total_bags  = len(batch['Y'])
 		x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len = self.pad_dynamic(X, pos1, pos2, sub_type, obj_type, rel_alias)
