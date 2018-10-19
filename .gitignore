@@ -9,5 +9,5 @@
 *.pyc
 *.swp
 *.egg
-*.zip
+#*.zip
 *._*
