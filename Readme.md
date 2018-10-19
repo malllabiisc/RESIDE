@@ -55,8 +55,8 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 ### Side Information:
 
-* **Entity Type** information provided in `side_info/type_info.zip`. 
-* **Relation Alias Information** for provided in `side_info/relation_alias.zip`.
+* **Entity Type Information** is provided in `side_info/type_info.zip`. 
+* **Relation Alias Information** is provided in `side_info/relation_alias.zip`.
 
 ### Evaluate pretrained model:
 
