@@ -31,7 +31,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
               "ObjPos":   [s1_obj, s2_obj, ...],
               "SubType":  [s1_subType, s2_subType, ...],
               "ObjType":  [s1_objType, s2_objType, ...],
-              "ProbY":    [rel_alias1, rel_alias2, ...]
+              "ProbY":    [[s1_rel_alias1, s1_rel_alias2, ...], [s2_rel_alias1, ... ], ...]
               "DepEdges": [[s1_dep_edges], [s2_dep_edges] ...]
           },
           {}, ...
