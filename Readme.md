@@ -63,8 +63,9 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 - **Entity Type** information provided in `side_info/type_info.zip`. 
   * Entity type information can be used directly in the model.
-- **Relation Alias Information** for provided in `side_info/relation_alias.zip`.
-  * The preprocessing code for using relation alias information is provided in `rel_alias_side_info.py`. Following figure summarizes the method.
+- **Relation Alias Information** is provided in `side_info/relation_alias.zip`.
+  * The preprocessing code for using relation alias information: `rel_alias_side_info.py`. 
+  * Following figure summarizes the method:
   ![](https://github.com/malllabiisc/RESIDE/blob/master/images/relation_alias.png)
 
 ### Training from scratch:
