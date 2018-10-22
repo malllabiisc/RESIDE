@@ -76,8 +76,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 ### Citation
 ```tex
 @inproceedings{Vashishth2018reside,
-	author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and 
-			  Bhattacharyya, Chiranjib and Talukdar, Partha},
+	author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and Bhattacharyya, Chiranjib and Talukdar, Partha},
 	booktitle = {Empirical Methods in Natural Language Processing (EMNLP)},
 	title = {RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information},
 	url = {https://shikhar-vashishth.github.io/assets/pdf/reside_emnlp18.pdf},
