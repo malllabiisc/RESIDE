@@ -61,21 +61,15 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 ### Side Information:
 
-* **Entity Type** information provided in `side_info/type_info.zip`. 
-
+- **Entity Type** information provided in `side_info/type_info.zip`. 
   * Entity type information can be used directly in the model.
-
-* **Relation Alias Information** for provided in `side_info/relation_alias.zip`.
-
+- **Relation Alias Information** for provided in `side_info/relation_alias.zip`.
   * The preprocessing code for using relation alias information is provided in `rel_alias_side_info.py`. Following figure summarizes the method.
-
   ![](https://github.com/malllabiisc/RESIDE/blob/master/images/relation_alias.png)
 
 ### Training from scratch:
 - Execute `setup.sh` for downloading GloVe embeddings.
-
-- For training **RESIDE** execute:
-
+- For training **RESIDE** run:
   ```shell
   python reside.py -data data/riedel_processed.pkl -name new_run
   ```
