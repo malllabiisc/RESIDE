@@ -74,7 +74,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
   ```
 
 ### Citation
-```json
+```tex
 @inproceedings{Vashishth2018reside,
 	author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and 
 			  Bhattacharyya, Chiranjib and Talukdar, Partha},
