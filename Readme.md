@@ -60,25 +60,29 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 ### Evaluate pretrained model:
 
-- `reside.py` contains TensorFlow (1.x) based implementation of `RESIDE` (proposed method).
+- `reside.py` contains TensorFlow (1.x) based implementation of **RESIDE** (proposed method).
 - Download the pretrained model's parameters from [here](https://drive.google.com/open?id=16yuV5SoxHEdAURTw5wrqYKR1cStQrzTw). 
-- Execute `evaluate.sh` for comparing pretrained `RESIDE` model against baselines (plots Precision-Recall curve). 
+- Execute `evaluate.sh` for comparing pretrained **RESIDE** model against baselines (plots Precision-Recall curve). 
 
 ### Training from scratch:
-- For training `RESIDE` execute:
+- Execute `setup.sh` for downloading GloVe embeddings.
+
+- For training **RESIDE** execute:
+
   ```shell
   python reside.py -data data/riedel_processed.pkl -name new_run
   ```
 
 ### Citation
-```tex
+```json
 @inproceedings{Vashishth2018reside,
- author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and Bhattacharyya, Chiranjib and Talukdar, Partha},
- booktitle = {Empirical Methods in Natural Language Processing (EMNLP)},
- title = {RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information},
- url = {https://shikhar-vashishth.github.io/assets/pdf/reside_emnlp18.pdf},
- year = {2018}
+	author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and 
+			  Bhattacharyya, Chiranjib and Talukdar, Partha},
+	booktitle = {Empirical Methods in Natural Language Processing (EMNLP)},
+	title = {RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information},
+	url = {https://shikhar-vashishth.github.io/assets/pdf/reside_emnlp18.pdf},
+	year = {2018}
 }
 ```
 
-For any clarification, please contact [shikhar@iisc.ac.in](http://shikhar-vashishth.github.io).
+For any clarification, comments, or suggestions please create an issue or contact [shikhar@iisc.ac.in](http://shikhar-vashishth.github.io).
