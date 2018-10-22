@@ -31,7 +31,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
               "ObjPos":   [s1_obj, s2_obj, ...],
               "SubType":  [s1_subType, s2_subType, ...],
               "ObjType":  [s1_objType, s2_objType, ...],
-              "ProbY":    [rel_alias1, rel_alias2, ...]
+              "ProbY":    [[s1_rel_alias1, s1_rel_alias2, ...], [s2_rel_alias1, ... ], ...]
               "DepEdges": [[s1_dep_edges], [s2_dep_edges] ...]
           },
           {}, ...
@@ -72,11 +72,23 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
   ![](https://github.com/malllabiisc/RESIDE/blob/master/images/relation_alias.png)
 
 ### Training from scratch:
-- For training RESIDE execute:
+- Execute `setup.sh` for downloading GloVe embeddings.
+
+- For training **RESIDE** execute:
+
   ```shell
   python reside.py -data data/riedel_processed.pkl -name new_run
   ```
 
+### Citation
+```tex
+@inproceedings{Vashishth2018reside,
+	author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and Bhattacharyya, Chiranjib and Talukdar, Partha},
+	booktitle = {Empirical Methods in Natural Language Processing (EMNLP)},
+	title = {RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information},
+	url = {https://shikhar-vashishth.github.io/assets/pdf/reside_emnlp18.pdf},
+	year = {2018}
+}
+```
 
-
-For any clarification, please contact [shikhar@iisc.ac.in](http://shikhar-vashishth.github.io).
+For any clarification, comments, or suggestions please create an issue or contact [shikhar@iisc.ac.in](http://shikhar-vashishth.github.io).
