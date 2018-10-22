@@ -1,7 +1,8 @@
 import numpy as np, os, sys, random, json, gensim, argparse
-import pickle, uuid, time
+import pickle, uuid, time, pdb
 import logging, logging.config, pathlib
 from collections import defaultdict as ddict
+from nltk.tokenize import word_tokenize
 from pprint import pprint
 from sklearn.metrics import precision_recall_fscore_support, precision_recall_curve, average_precision_score
 
@@ -9,16 +10,32 @@ from sklearn.metrics import precision_recall_fscore_support, precision_recall_cu
 np.set_printoptions(precision=4)
 
 # Reads the embeddings in word2vec format
-def getEmbeddings(embed_loc, wrd_list, embed_dims):
+def getEmbeddings(model, wrd_list, embed_dims):
 	embed_list = []
-	model = gensim.models.KeyedVectors.load_word2vec_format(embed_loc, binary=False)
 
 	for wrd in wrd_list:
 		if wrd in model.vocab: 	embed_list.append(model.word_vec(wrd))
 		else: 			embed_list.append(np.random.randn(embed_dims))
 
 	return np.array(embed_list, dtype=np.float32)
-	
+
+def rel_encoder(model, phr_list, embed_dims):
+	embed_list = []
+
+	for phr in phr_list:
+		if phr in model.vocab:
+			embed_list.append(model.word_vec(phr))
+		else:
+			vec = np.zeros(embed_dims, np.float32)
+			wrds = word_tokenize(phr)
+			for wrd in wrds:
+				if wrd in model.vocab: 	vec += model.word_vec(wrd)
+				else:			vec += np.random.randn(embed_dims)
+			embed_list.append(vec / len(wrds))
+
+	return np.array(embed_list)
+
+
 # Sets which gpus to use
 def set_gpu(gpus):
 	os.environ["CUDA_DEVICE_ORDER"]    = "PCI_BUS_ID"

@@ -2,7 +2,7 @@
 
 Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information](http://malllabiisc.github.io/publications/papers/reside_emnlp18.pdf).
 
-![](https://github.com/malllabiisc/RESIDE/blob/master/overview.png)*Overview of RESIDE (proposed method): RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention.*
+![](https://github.com/malllabiisc/RESIDE/blob/master/images/overview.png)*Overview of RESIDE (proposed method): RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention.*
 *Then, sentence embedding is concatenated with relation alias information, which comes from the Side Information Acquisition Section, before computing attention over sentences. Finally, bag representation with entity type information is fed to a softmax classifier. Please refer to paper for more details.* 
 
 ### Dependencies
@@ -53,16 +53,23 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
     * `ProbY` is the relation alias side information (refer paper) for the bag.
     * `DepEdges` is the edgelist of dependency parse for each sentence (required for GCN).
 
-### Side Information:
-
-* **Entity Type** information provided in `side_info/type_info.zip`. 
-* **Relation Alias Information** for provided in `side_info/relation_alias.zip`.
-
 ### Evaluate pretrained model:
 
 - `reside.py` contains TensorFlow (1.x) based implementation of RESIDE (proposed method).
 - Download the pretrained model's parameters from [here](https://drive.google.com/open?id=16yuV5SoxHEdAURTw5wrqYKR1cStQrzTw). 
 - Execute `evaluate.sh` for comparing pretrained RESIDE model against baselines (plots Precision-Recall curve). 
+
+### Side Information:
+
+* **Entity Type** information provided in `side_info/type_info.zip`. 
+
+  * Entity type information can be used directly in the model.
+
+* **Relation Alias Information** for provided in `side_info/relation_alias.zip`.
+
+  * The preprocessing code for using relation alias information is provided in `rel_alias_side_info.py`. Following figure summarizes the method.
+
+  ![](https://github.com/malllabiisc/RESIDE/blob/master/images/relation_alias.png)
 
 ### Training from scratch:
 - For training RESIDE execute:
