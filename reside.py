@@ -377,7 +377,8 @@ class RESIDE(Model):
 		in_wrds, in_pos1, in_pos2 = self.input_x, self.input_pos1, self.input_pos2
 
 		with tf.variable_scope('Embeddings', reuse=tf.AUTO_REUSE) as scope:
-			embed_init 	 = getEmbeddings(self.p.embed_loc, self.wrd_list, self.p.embed_dim)
+			model 	  	= gensim.models.KeyedVectors.load_word2vec_format(self.p.embed_loc, binary=False)
+			embed_init 	= getEmbeddings(model, self.wrd_list, self.p.embed_dim)
 			_wrd_embeddings = tf.get_variable('embeddings', initializer=embed_init, trainable=True, regularizer=self.regularizer)
 			wrd_pad  	= tf.zeros([1, self.p.embed_dim])
 			wrd_embeddings  = tf.concat([wrd_pad, _wrd_embeddings], axis=0)
