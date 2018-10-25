@@ -49,7 +49,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
     * `Y` is the relation expressed by the sentences in the bag.
     * `Pos1` and `Pos2` are position of each word in sentences wrt to target entity 1 and entity 2.
     * `SubPos` and `ObjPos` contains the position of the target entity 1 and entity 2 in each sentence.
-    * `SubType` and `ObjType` contains the target entity 1 and entity 2 type information obatined from KG.
+    * `SubType` and `ObjType` contains the target entity 1 and entity 2 type information obtained from KG.
     * `ProbY` is the relation alias side information (refer paper) for the bag.
     * `DepEdges` is the edgelist of dependency parse for each sentence (required for GCN).
 
