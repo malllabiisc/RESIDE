@@ -122,7 +122,7 @@ class RESIDE(Model):
 		self.test_two	   = self.getPdata(data)
 
 		self.data 	   = data
-		# self.data	   = self.splitBags(data, self.p.chunk_size)
+		# self.data	   = self.splitBags(data, self.p.chunk_size)			# Activate if bag sizes are too big
 
 		self.logger.info('Document count [{}]: {}, [{}]: {}'.format('train', len(self.data['train']), 'test', len(self.data['test'])))
 
@@ -386,14 +386,13 @@ class RESIDE(Model):
 			pos1_embeddings = tf.get_variable('pos1_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 			pos2_embeddings = tf.get_variable('pos2_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 
-		if self.p.RelAlias:
-			with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
-				pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
-				_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
-				alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
+		with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
+			pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
+			_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
+			alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
 
-				alias_embed = tf.nn.embedding_lookup(alias_embeddings, self.input_proby_ind)
-				alias_av    = tf.divide(tf.reduce_sum(alias_embed, axis=1), tf.expand_dims(self.input_proby_len, axis=1))
+			alias_embed = tf.nn.embedding_lookup(alias_embeddings, self.input_proby_ind)
+			alias_av    = tf.divide(tf.reduce_sum(alias_embed, axis=1), tf.expand_dims(self.input_proby_len, axis=1))
 
 		wrd_embed  = tf.nn.embedding_lookup(wrd_embeddings,  in_wrds)
 		pos1_embed = tf.nn.embedding_lookup(pos1_embeddings, in_pos1)
@@ -408,19 +407,15 @@ class RESIDE(Model):
 			lstm_out     = tf.concat((val[0], val[1]), axis=2)
 			lstm_out_dim = self.p.lstm_dim*2
 
-		if self.p.de_gcn:
-			de_out = self.GCNLayer( gcn_in 		= lstm_out, 		in_dim 	    = lstm_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
-						batch_size 	= self.total_sents, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel,
-						adj_ind 	= self.de_adj_ind, 	adj_data    = self.de_adj_data, 	w_gating   = self.p.wGate,
-						num_layers 	= self.p.de_layers, 	name 	    = "GCN_DE")
+		de_out = self.GCNLayer( gcn_in 		= lstm_out, 		in_dim 	    = lstm_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
+					batch_size 	= self.total_sents, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel,
+					adj_ind 	= self.de_adj_ind, 	adj_data    = self.de_adj_data, 	w_gating   = self.p.wGate,
+					num_layers 	= self.p.de_layers, 	name 	    = "GCN_DE")
 
 
-			de_out 	   = de_out[-1]
-			de_out 	   = tf.concat([lstm_out, de_out], axis=2)
-			de_out_dim = self.p.de_gcn_dim + lstm_out_dim
-		else:
-			de_out 		= lstm_out
-			de_out_dim	= lstm_out_dim
+		de_out 	   = de_out[-1]
+		de_out 	   = tf.concat([lstm_out, de_out], axis=2)
+		de_out_dim = self.p.de_gcn_dim + lstm_out_dim
 
 		with tf.variable_scope('Word_attention', reuse=tf.AUTO_REUSE) as scope:
 			wrd_query    = tf.get_variable('wrd_query', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
@@ -439,23 +434,21 @@ class RESIDE(Model):
 						[self.total_sents, de_out_dim]
 					)
 
-			if self.p.RelAlias:
-				sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
-				de_out_dim += self.p.alias_dim
+			sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
+			de_out_dim += self.p.alias_dim
 
-		if self.p.Type:
-			with tf.variable_scope('TypeInfo', reuse=tf.AUTO_REUSE) as scope:
-				pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
-				_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
-				type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
+		with tf.variable_scope('TypeInfo', reuse=tf.AUTO_REUSE) as scope:
+			pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
+			_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
+			type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
 
-				subtype = tf.nn.embedding_lookup(type_embeddings,  self.input_subtype)
-				objtype = tf.nn.embedding_lookup(type_embeddings,  self.input_objtype)
+			subtype = tf.nn.embedding_lookup(type_embeddings,  self.input_subtype)
+			objtype = tf.nn.embedding_lookup(type_embeddings,  self.input_objtype)
 
-				subtype_av = tf.divide(tf.reduce_sum(subtype, axis=1), tf.expand_dims(self.input_subtype_len, axis=1))
-				objtype_av = tf.divide(tf.reduce_sum(objtype, axis=1), tf.expand_dims(self.input_objtype_len, axis=1))
+			subtype_av = tf.divide(tf.reduce_sum(subtype, axis=1), tf.expand_dims(self.input_subtype_len, axis=1))
+			objtype_av = tf.divide(tf.reduce_sum(objtype, axis=1), tf.expand_dims(self.input_objtype_len, axis=1))
 
-				type_info = tf.concat([subtype_av, objtype_av], axis=1)
+			type_info = tf.concat([subtype_av, objtype_av], axis=1)
 
 		with tf.variable_scope('Sentence_attention', reuse=tf.AUTO_REUSE) as scope:
 			sent_atten_q = tf.get_variable('sent_atten_q', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
@@ -476,9 +469,8 @@ class RESIDE(Model):
 
 			bag_rep = tf.map_fn(getSentAtten, self.sent_num, dtype=tf.float32)
 
-		if self.p.Type:
-			bag_rep    = tf.concat([bag_rep, type_info], axis=1)
-			de_out_dim = de_out_dim + self.p.type_dim * 2
+		bag_rep    = tf.concat([bag_rep, type_info], axis=1)
+		de_out_dim = de_out_dim + self.p.type_dim * 2
 
 		with tf.variable_scope('FC1', reuse=tf.AUTO_REUSE) as scope:
 			w_rel   = tf.get_variable('w_rel', [de_out_dim, self.num_class], initializer=tf.contrib.layers.xavier_initializer(), 		regularizer=self.regularizer)
@@ -700,12 +692,7 @@ if __name__== "__main__":
 	parser.add_argument('-data', 	 dest="dataset", 	required=True,							help='Dataset to use')
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
 	parser.add_argument('-num_class',dest="num_class", 	default=53,   	type=int, 					help='num classes for the dataset')
-
-	parser.add_argument('-lstm',  	 dest="lstm", 		default='concat', 		choices=['add', 'concat'],	help='Bi-LSTM add/concat')
-	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_false',   					help='Decide to include GCN in the model')
-	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Decide to include gates in GCN')
-	parser.add_argument('-Type', 	 dest="Type", 		action='store_true',						help='Decide to include Entity Type Side Information')
-	parser.add_argument('-RelAlias', dest="RelAlias", 	action='store_true', 						help='Decide to include Relation Alias Side Information')
+	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Include edgewise-gating in GCN')
 
 	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
 	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=16, 			type=int, 			help='Dimension of positional embeddings')

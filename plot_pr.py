@@ -1,15 +1,7 @@
-import os, sys, pdb, numpy as np, random, argparse, codecs, pickle, time, json
-from pprint import pprint
-from collections import defaultdict as ddict
-from joblib import Parallel, delayed
-from pymongo import MongoClient
-import matplotlib
-matplotlib.use('agg')
+import numpy as np, argparse, pickle
+import matplotlib; matplotlib.use('agg')
 import matplotlib.pyplot as plt
-#plt.style.use('ggplot')
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import average_precision_score
-import pandas as pd
+from sklearn.metrics import precision_recall_curve, average_precision_score
 
 def loadData(path):
 	preds 	   	= pickle.load(open(path, 'rb'))
