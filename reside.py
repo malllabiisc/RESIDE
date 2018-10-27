@@ -291,7 +291,7 @@ class RESIDE(Model):
 				for lbl in range(max_labels):
 
 					# Defining the layer and label specific parameters
-					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer), reuse=tf.AUTO_REUSE) as scope:
+					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer)) as scope:
 						w_in   = tf.get_variable('w_in',  	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						w_out  = tf.get_variable('w_out', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						w_loop = tf.get_variable('w_loop', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
@@ -376,7 +376,7 @@ class RESIDE(Model):
 	def add_model(self):
 		in_wrds, in_pos1, in_pos2 = self.input_x, self.input_pos1, self.input_pos2
 
-		with tf.variable_scope('Embeddings', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Embeddings') as scope:
 			model 	  	= gensim.models.KeyedVectors.load_word2vec_format(self.p.embed_loc, binary=False)
 			embed_init 	= getEmbeddings(model, self.wrd_list, self.p.embed_dim)
 			_wrd_embeddings = tf.get_variable('embeddings', initializer=embed_init, trainable=True, regularizer=self.regularizer)
@@ -386,7 +386,7 @@ class RESIDE(Model):
 			pos1_embeddings = tf.get_variable('pos1_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 			pos2_embeddings = tf.get_variable('pos2_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 
-		with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('AliasInfo') as scope:
 			pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
 			_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
 			alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
@@ -400,8 +400,8 @@ class RESIDE(Model):
 		embeds     = tf.concat([wrd_embed, pos1_embed, pos2_embed], axis=2)
 
 		with tf.variable_scope('Bi-LSTM') as scope:
-			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, reuse=tf.AUTO_REUSE, name='FW_GRU'), output_keep_prob=self.rec_dropout)
-			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, reuse=tf.AUTO_REUSE, name='BW_GRU'), output_keep_prob=self.rec_dropout)
+			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='FW_GRU'), output_keep_prob=self.rec_dropout)
+			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='BW_GRU'), output_keep_prob=self.rec_dropout)
 			val, state   = tf.nn.bidirectional_dynamic_rnn(fw_cell, bk_cell, embeds, sequence_length=self.x_len, dtype=tf.float32)
 
 			lstm_out     = tf.concat((val[0], val[1]), axis=2)
@@ -417,7 +417,7 @@ class RESIDE(Model):
 		de_out 	   = tf.concat([lstm_out, de_out], axis=2)
 		de_out_dim = self.p.de_gcn_dim + lstm_out_dim
 
-		with tf.variable_scope('Word_attention', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Word_attention') as scope:
 			wrd_query    = tf.get_variable('wrd_query', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 			sent_reps    = tf.reshape(
 						tf.matmul(
@@ -437,7 +437,7 @@ class RESIDE(Model):
 			sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
 			de_out_dim += self.p.alias_dim
 
-		with tf.variable_scope('TypeInfo', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('TypeInfo') as scope:
 			pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
 			_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
 			type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
@@ -450,7 +450,7 @@ class RESIDE(Model):
 
 			type_info = tf.concat([subtype_av, objtype_av], axis=1)
 
-		with tf.variable_scope('Sentence_attention', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Sentence_attention') as scope:
 			sent_atten_q = tf.get_variable('sent_atten_q', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 
 			def getSentAtten(num):
@@ -472,7 +472,7 @@ class RESIDE(Model):
 		bag_rep    = tf.concat([bag_rep, type_info], axis=1)
 		de_out_dim = de_out_dim + self.p.type_dim * 2
 
-		with tf.variable_scope('FC1', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('FC1') as scope:
 			w_rel   = tf.get_variable('w_rel', [de_out_dim, self.num_class], initializer=tf.contrib.layers.xavier_initializer(), 		regularizer=self.regularizer)
 			b_rel   = tf.get_variable('b_rel', 				 initializer=np.zeros([self.num_class]).astype(np.float32), 	regularizer=self.regularizer)
 			nn_out = tf.nn.xw_plus_b(bag_rep, w_rel, b_rel)
