@@ -109,8 +109,7 @@ class RESIDE(Model):
 		self.type2id 	   = data['type2id']
 		self.type_num	   = len(data['type2id'])
 		self.max_pos 	   = data['max_pos']						# Maximum position distance
-
-		self.num_class     = self.p.num_class
+		self.num_class     = len(data['rel2id'])
 		self.num_deLabel   = 1
 
 		# Get Word List
@@ -691,7 +690,6 @@ if __name__== "__main__":
 
 	parser.add_argument('-data', 	 dest="dataset", 	required=True,							help='Dataset to use')
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
-	parser.add_argument('-num_class',dest="num_class", 	default=53,   	type=int, 					help='num classes for the dataset')
 	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Include edgewise-gating in GCN')
 
 	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')

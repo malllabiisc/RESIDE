@@ -2,6 +2,7 @@ import numpy as np, argparse, pickle
 import matplotlib; matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_recall_curve, average_precision_score
+import pdb
 
 def loadData(path):
 	preds 	   	= pickle.load(open(path, 'rb'))
@@ -11,22 +12,29 @@ def loadData(path):
 	logit_list_new  = np.reshape(np.array([x[1:] for x in logit_list]), (-1))
 	return y_hot_new, logit_list_new
 
-def plotPR():
+def plotPR(dataset):
 	y_true, y_scores 	   = loadData('./results/{}/precision_recall.pkl'.format(args.name))
 	precision,recall,threshold = precision_recall_curve(y_true,y_scores)
 	area_under 	   	   = average_precision_score(y_true, y_scores)
+	baselines_path 		   = './baselines_pr/{}/'.format(dataset)
 
 	plt.plot(recall[:], precision[:], label='RESIDE', color ='red', lw=1, marker = 'o', markevery = 0.1, ms = 6)
 
-	base_list = ['BGWA', 'PCNN+ATT', 'PCNN', 'MIMLRE', 'MultiR', 'Mintz']
-	color     = ['purple', 'darkorange', 'green', 'xkcd:azure', 'orchid', 'cornflowerblue']
-	marker	  = ['d', 's', '^', '*', 'v', 'x', 'h']
-	plt.ylim([0.3, 1.0])
-	plt.xlim([0.0, 0.45])
+	if dataset == 'riedel_nyt':
+		base_list = ['BGWA', 'PCNN+ATT', 'PCNN', 'MIMLRE', 'MultiR', 'Mintz']
+		color     = ['purple', 'darkorange', 'green', 'xkcd:azure', 'orchid', 'cornflowerblue']
+		marker	  = ['d', 's', '^', '*', 'v', 'x', 'h']
+		plt.ylim([0.3, 1.0])
+		plt.xlim([0.0, 0.45])
+	else:
+		base_list = ['BGWA', 'PCNN+ATT', 'PCNN']
+		color     = ['purple', 'darkorange', 'green']
+		marker	  = ['d', 's', '^']
+
 
 	for i, baseline in enumerate(base_list):
-		precision = np.load(args.baselines + baseline + '/precision.npy')
-		recall    = np.load(args.baselines + baseline + '/recall.npy')
+		precision = np.load(baselines_path + baseline + '/precision.npy')
+		recall    = np.load(baselines_path + baseline + '/recall.npy')
 		plt.plot(recall, precision, color = color[i], label = baseline, lw=1, marker = marker[i], markevery = 0.1, ms = 6)
 
 	plt.xlabel('Recall',    fontsize = 14)
@@ -44,6 +52,6 @@ def plotPR():
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='')
 	parser.add_argument('-name', 	  default='pretrained_model')
-	parser.add_argument('-baselines', default='./baselines_pr/')
+	parser.add_argument('-dataset',   default='riedel_nyt')
 	args = parser.parse_args()
-	plotPR()
+	plotPR(args.dataset)
