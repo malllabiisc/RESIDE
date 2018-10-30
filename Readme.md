@@ -58,7 +58,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 ### Evaluate pretrained model:
 
 - `reside.py` contains TensorFlow (1.x) based implementation of RESIDE (proposed method).
-- Download the pretrained model's parameters from [RiedelNYT](https://drive.google.com/file/d/1CUk10FTncaaZspAoh8YkHTML3RJHfW7e/view?usp=sharing) and [GIDS](https://drive.google.com/file/d/1X5pKkL6eOkGXw39baq0n9noBXa--5EhE/view?usp=sharing). 
+- Download the pretrained model's parameters from [RiedelNYT](https://drive.google.com/file/d/1CUk10FTncaaZspAoh8YkHTML3RJHfW7e/view?usp=sharing) and [GIDS](https://drive.google.com/file/d/1X5pKkL6eOkGXw39baq0n9noBXa--5EhE/view?usp=sharing) (put downloaded folders in `checkpoint` directory). 
 - Execute `evaluate.sh` for comparing pretrained RESIDE model against baselines (plots Precision-Recall curve). 
 
 ### Side Information:
