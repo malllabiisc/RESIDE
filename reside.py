@@ -568,7 +568,7 @@ class RESIDE(Model):
 			bag_cnt += len(batch['sent_num'])
 
 			if step % 10 == 0:
-				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_train_loss))
+				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_train_acc))
 				self.summ_writer.add_summary(summary_str, epoch*len(self.data['train']) + bag_cnt)
 
 		accuracy = np.mean(accuracies) * 100.0
@@ -628,14 +628,14 @@ class RESIDE(Model):
 
 		''' Train model '''
 		if not self.p.only_eval:
-			self.best_train_loss = 0.0
+			self.best_train_acc = 0.0
 			for epoch in range(self.p.max_epochs):
 				train_loss, train_acc = self.run_epoch(sess, self.data['train'], epoch)
 				self.logger.info('[Epoch {}]: Training Loss: {:.5}, Training Acc: {:.5}\n'.format(epoch, train_loss, train_acc))
 
 				# Store the model with least train loss
-				if train_acc < self.best_train_loss:
-					self.best_train_loss = train_acc
+				if train_acc > self.best_train_acc:
+					self.best_train_acc = train_acc
 					saver.save(sess=sess, save_path=save_path)
 		
 		''' Evaluation on Test '''
