@@ -704,7 +704,7 @@ if __name__== "__main__":
 
 	parser.add_argument('-lr',	 dest="lr", 		default=0.001,  		type=float,			help='Learning rate')
 	parser.add_argument('-l2', 	 dest="l2", 		default=0.001,  		type=float, 			help='L2 regularization')
-	parser.add_argument('-epoch', 	 dest="max_epochs", 	default=10,   			type=int, 			help='Max epochs')
+	parser.add_argument('-epoch', 	 dest="max_epochs", 	default=2,   			type=int, 			help='Max epochs')
 	parser.add_argument('-batch', 	 dest="batch_size", 	default=32,   			type=int, 			help='Batch size')
 	parser.add_argument('-chunk', 	 dest="chunk_size", 	default=1000,   		type=int, 			help='Chunk size')
 	parser.add_argument('-restore',	 dest="restore", 	action='store_true', 						help='Restore from the previous best saved model')
