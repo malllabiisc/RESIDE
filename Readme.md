@@ -77,7 +77,16 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
   python reside.py -data data/riedel_processed.pkl -name new_run
   ```
 
+### Preprocessing a new dataset:
+
+* The following code is for getting a new dataset in the required format (`riedel_processed.pkl`) for `reside.py`.
+* Get the data in the same format as has been put in [riedel_raw](https://drive.google.com/file/d/1D7bZPvrSAbIPaFSG7ZswYQcPA3tmouCw/view?usp=sharing) file.
+* For generating bags from sentences execute `make_bags.py`. Then, for converting generated bags to pickle format execute `final_process.py`.
+
+
+
 ### Citation
+
 ```tex
 @InProceedings{D18-1157,
   author = 	"Vashishth, Shikhar
