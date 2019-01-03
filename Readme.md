@@ -88,7 +88,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 ### Citation
 
 ```tex
-@InProceedings{D18-1157,
+@InProceedings{reside2018,
   author = 	"Vashishth, Shikhar
 		and Joshi, Rishabh
 		and Prayaga, Sai Suman
