@@ -75,7 +75,18 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
   python reside.py -data data/riedel_processed.pkl -name new_run
   ```
 
-### Citation
+* The above model needs to be further trained with SGD optimizer for few epochs to match the performance reported in the paper. For that execute
+
+  ```shell
+  python reside.py -name new_run_xx_xx_xxxx_xx:xx:xx -restore -opt sgd -lr 0.001 -l2 0.0 -epoch 4
+  ```
+
+* Finally, run `python plot_pr.py -name new_run_xx_xx_xxxx_xx:xx:xx` to get the plot.
+
+### Citation:
+
+Please cite the following paper if you use this code in your work.
+
 ```tex
 @inproceedings{Vashishth2018reside,
 	author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and Bhattacharyya, Chiranjib and Talukdar, Partha},
