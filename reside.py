@@ -1,4 +1,3 @@
-from models import *
 from helper import *
 import tensorflow as tf
 
@@ -9,7 +8,7 @@ Abbreviations used in variable names:
 NOTE: View this file with tab size 8.
 """
 
-class RESIDE(Model):
+class RESIDE(object):
 
 	# Generates batches of multiple bags
 	def getBatches(self, data, shuffle = True):
@@ -735,7 +734,7 @@ if __name__== "__main__":
 	parser.add_argument('-embed_dim',dest="embed_dim", 	default=50, type=int,						help='Dimension of embedding')
 	args = parser.parse_args()
 
-	if not args.restore: args.name = args.name + '_' + time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")
+	if not args.restore: args.name = args.name
 
 	# Set GPU to use
 	set_gpu(args.gpu)

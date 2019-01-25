@@ -78,10 +78,10 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 * The above model needs to be further trained with SGD optimizer for few epochs to match the performance reported in the paper. For that execute
 
   ```shell
-  python reside.py -name new_run_xx_xx_xxxx_xx:xx:xx -restore -opt sgd -lr 0.001 -l2 0.0 -epoch 4
+  python reside.py -name new_run -restore -opt sgd -lr 0.001 -l2 0.0 -epoch 4
   ```
 
-* Finally, run `python plot_pr.py -name new_run_xx_xx_xxxx_xx:xx:xx` to get the plot.
+* Finally, run `python plot_pr.py -name new_run` to get the plot.
 
 ### Citation:
 
