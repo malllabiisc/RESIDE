@@ -108,8 +108,7 @@ class RESIDE(object):
 		self.type2id 	   = data['type2id']
 		self.type_num	   = len(data['type2id'])
 		self.max_pos 	   = data['max_pos']						# Maximum position distance
-
-		self.num_class     = self.p.num_class
+		self.num_class     = len(data['rel2id'])
 		self.num_deLabel   = 1
 
 		# Get Word List
@@ -121,7 +120,7 @@ class RESIDE(object):
 		self.test_two	   = self.getPdata(data)
 
 		self.data 	   = data
-		# self.data	   = self.splitBags(data, self.p.chunk_size)
+		# self.data	   = self.splitBags(data, self.p.chunk_size)			# Activate if bag sizes are too big
 
 		self.logger.info('Document count [{}]: {}, [{}]: {}'.format('train', len(self.data['train']), 'test', len(self.data['test'])))
 
@@ -290,7 +289,7 @@ class RESIDE(object):
 				for lbl in range(max_labels):
 
 					# Defining the layer and label specific parameters
-					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer), reuse=tf.AUTO_REUSE) as scope:
+					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer)) as scope:
 						w_in   = tf.get_variable('w_in',  	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						w_out  = tf.get_variable('w_out', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						w_loop = tf.get_variable('w_loop', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
@@ -375,7 +374,7 @@ class RESIDE(object):
 	def add_model(self):
 		in_wrds, in_pos1, in_pos2 = self.input_x, self.input_pos1, self.input_pos2
 
-		with tf.variable_scope('Embeddings', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Embeddings') as scope:
 			model 	  	= gensim.models.KeyedVectors.load_word2vec_format(self.p.embed_loc, binary=False)
 			embed_init 	= getEmbeddings(model, self.wrd_list, self.p.embed_dim)
 			_wrd_embeddings = tf.get_variable('embeddings', initializer=embed_init, trainable=True, regularizer=self.regularizer)
@@ -385,14 +384,13 @@ class RESIDE(object):
 			pos1_embeddings = tf.get_variable('pos1_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 			pos2_embeddings = tf.get_variable('pos2_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 
-		if self.p.RelAlias:
-			with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
-				pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
-				_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
-				alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
+		with tf.variable_scope('AliasInfo') as scope:
+			pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
+			_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
+			alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
 
-				alias_embed = tf.nn.embedding_lookup(alias_embeddings, self.input_proby_ind)
-				alias_av    = tf.divide(tf.reduce_sum(alias_embed, axis=1), tf.expand_dims(self.input_proby_len, axis=1))
+			alias_embed = tf.nn.embedding_lookup(alias_embeddings, self.input_proby_ind)
+			alias_av    = tf.divide(tf.reduce_sum(alias_embed, axis=1), tf.expand_dims(self.input_proby_len, axis=1))
 
 		wrd_embed  = tf.nn.embedding_lookup(wrd_embeddings,  in_wrds)
 		pos1_embed = tf.nn.embedding_lookup(pos1_embeddings, in_pos1)
@@ -400,28 +398,24 @@ class RESIDE(object):
 		embeds     = tf.concat([wrd_embed, pos1_embed, pos2_embed], axis=2)
 
 		with tf.variable_scope('Bi-LSTM') as scope:
-			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, reuse=tf.AUTO_REUSE, name='FW_GRU'), output_keep_prob=self.rec_dropout)
-			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, reuse=tf.AUTO_REUSE, name='BW_GRU'), output_keep_prob=self.rec_dropout)
+			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='FW_GRU'), output_keep_prob=self.rec_dropout)
+			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='BW_GRU'), output_keep_prob=self.rec_dropout)
 			val, state   = tf.nn.bidirectional_dynamic_rnn(fw_cell, bk_cell, embeds, sequence_length=self.x_len, dtype=tf.float32)
 
 			lstm_out     = tf.concat((val[0], val[1]), axis=2)
 			lstm_out_dim = self.p.lstm_dim*2
 
-		if self.p.de_gcn:
-			de_out = self.GCNLayer( gcn_in 		= lstm_out, 		in_dim 	    = lstm_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
-						batch_size 	= self.total_sents, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel,
-						adj_ind 	= self.de_adj_ind, 	adj_data    = self.de_adj_data, 	w_gating   = self.p.wGate,
-						num_layers 	= self.p.de_layers, 	name 	    = "GCN_DE")
+		de_out = self.GCNLayer( gcn_in 		= lstm_out, 		in_dim 	    = lstm_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
+					batch_size 	= self.total_sents, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel,
+					adj_ind 	= self.de_adj_ind, 	adj_data    = self.de_adj_data, 	w_gating   = self.p.wGate,
+					num_layers 	= self.p.de_layers, 	name 	    = "GCN_DE")
 
 
-			de_out 	   = de_out[-1]
-			de_out 	   = tf.concat([lstm_out, de_out], axis=2)
-			de_out_dim = self.p.de_gcn_dim + lstm_out_dim
-		else:
-			de_out 		= lstm_out
-			de_out_dim	= lstm_out_dim
+		de_out 	   = de_out[-1]
+		de_out 	   = tf.concat([lstm_out, de_out], axis=2)
+		de_out_dim = self.p.de_gcn_dim + lstm_out_dim
 
-		with tf.variable_scope('Word_attention', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Word_attention') as scope:
 			wrd_query    = tf.get_variable('wrd_query', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 			sent_reps    = tf.reshape(
 						tf.matmul(
@@ -438,25 +432,23 @@ class RESIDE(object):
 						[self.total_sents, de_out_dim]
 					)
 
-			if self.p.RelAlias:
-				sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
-				de_out_dim += self.p.alias_dim
+			sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
+			de_out_dim += self.p.alias_dim
 
-		if self.p.Type:
-			with tf.variable_scope('TypeInfo', reuse=tf.AUTO_REUSE) as scope:
-				pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
-				_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
-				type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
+		with tf.variable_scope('TypeInfo') as scope:
+			pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
+			_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
+			type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
 
-				subtype = tf.nn.embedding_lookup(type_embeddings,  self.input_subtype)
-				objtype = tf.nn.embedding_lookup(type_embeddings,  self.input_objtype)
+			subtype = tf.nn.embedding_lookup(type_embeddings,  self.input_subtype)
+			objtype = tf.nn.embedding_lookup(type_embeddings,  self.input_objtype)
 
-				subtype_av = tf.divide(tf.reduce_sum(subtype, axis=1), tf.expand_dims(self.input_subtype_len, axis=1))
-				objtype_av = tf.divide(tf.reduce_sum(objtype, axis=1), tf.expand_dims(self.input_objtype_len, axis=1))
+			subtype_av = tf.divide(tf.reduce_sum(subtype, axis=1), tf.expand_dims(self.input_subtype_len, axis=1))
+			objtype_av = tf.divide(tf.reduce_sum(objtype, axis=1), tf.expand_dims(self.input_objtype_len, axis=1))
 
-				type_info = tf.concat([subtype_av, objtype_av], axis=1)
+			type_info = tf.concat([subtype_av, objtype_av], axis=1)
 
-		with tf.variable_scope('Sentence_attention', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Sentence_attention') as scope:
 			sent_atten_q = tf.get_variable('sent_atten_q', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 
 			def getSentAtten(num):
@@ -475,11 +467,10 @@ class RESIDE(object):
 
 			bag_rep = tf.map_fn(getSentAtten, self.sent_num, dtype=tf.float32)
 
-		if self.p.Type:
-			bag_rep    = tf.concat([bag_rep, type_info], axis=1)
-			de_out_dim = de_out_dim + self.p.type_dim * 2
+		bag_rep    = tf.concat([bag_rep, type_info], axis=1)
+		de_out_dim = de_out_dim + self.p.type_dim * 2
 
-		with tf.variable_scope('FC1', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('FC1') as scope:
 			w_rel   = tf.get_variable('w_rel', [de_out_dim, self.num_class], initializer=tf.contrib.layers.xavier_initializer(), 		regularizer=self.regularizer)
 			b_rel   = tf.get_variable('b_rel', 				 initializer=np.zeros([self.num_class]).astype(np.float32), 	regularizer=self.regularizer)
 			nn_out = tf.nn.xw_plus_b(bag_rep, w_rel, b_rel)
@@ -576,7 +567,7 @@ class RESIDE(object):
 			bag_cnt += len(batch['sent_num'])
 
 			if step % 10 == 0:
-				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_train_loss))
+				self.logger.info('E:{} Train Accuracy ({}/{}):\t{:.5}\t{:.5}\t{}\t{:.5}'.format(epoch, bag_cnt, len(self.data['train']), np.mean(accuracies)*100, np.mean(losses), self.p.name, self.best_train_acc))
 				self.summ_writer.add_summary(summary_str, epoch*len(self.data['train']) + bag_cnt)
 
 		accuracy = np.mean(accuracies) * 100.0
@@ -636,14 +627,14 @@ class RESIDE(object):
 
 		''' Train model '''
 		if not self.p.only_eval:
-			self.best_train_loss = 0.0
+			self.best_train_acc = 0.0
 			for epoch in range(self.p.max_epochs):
 				train_loss, train_acc = self.run_epoch(sess, self.data['train'], epoch)
 				self.logger.info('[Epoch {}]: Training Loss: {:.5}, Training Acc: {:.5}\n'.format(epoch, train_loss, train_acc))
 
 				# Store the model with least train loss
-				if train_acc < self.best_train_loss:
-					self.best_train_loss = train_acc
+				if train_acc > self.best_train_acc:
+					self.best_train_acc = train_acc
 					saver.save(sess=sess, save_path=save_path)
 		
 		''' Evaluation on Test '''
@@ -698,13 +689,7 @@ if __name__== "__main__":
 
 	parser.add_argument('-data', 	 dest="dataset", 	required=True,							help='Dataset to use')
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
-	parser.add_argument('-num_class',dest="num_class", 	default=53,   	type=int, 					help='num classes for the dataset')
-
-	parser.add_argument('-lstm',  	 dest="lstm", 		default='concat', 		choices=['add', 'concat'],	help='Bi-LSTM add/concat')
-	parser.add_argument('-DE', 	 dest="de_gcn", 	action='store_false',   					help='Decide to include GCN in the model')
-	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Decide to include gates in GCN')
-	parser.add_argument('-Type', 	 dest="Type", 		action='store_true',						help='Decide to include Entity Type Side Information')
-	parser.add_argument('-RelAlias', dest="RelAlias", 	action='store_true', 						help='Decide to include Relation Alias Side Information')
+	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Include edgewise-gating in GCN')
 
 	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
 	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=16, 			type=int, 			help='Dimension of positional embeddings')
@@ -718,7 +703,7 @@ if __name__== "__main__":
 
 	parser.add_argument('-lr',	 dest="lr", 		default=0.001,  		type=float,			help='Learning rate')
 	parser.add_argument('-l2', 	 dest="l2", 		default=0.001,  		type=float, 			help='L2 regularization')
-	parser.add_argument('-epoch', 	 dest="max_epochs", 	default=10,   			type=int, 			help='Max epochs')
+	parser.add_argument('-epoch', 	 dest="max_epochs", 	default=2,   			type=int, 			help='Max epochs')
 	parser.add_argument('-batch', 	 dest="batch_size", 	default=32,   			type=int, 			help='Batch size')
 	parser.add_argument('-chunk', 	 dest="chunk_size", 	default=1000,   		type=int, 			help='Chunk size')
 	parser.add_argument('-restore',	 dest="restore", 	action='store_true', 						help='Restore from the previous best saved model')

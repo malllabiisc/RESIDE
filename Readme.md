@@ -1,6 +1,6 @@
 ## RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information
 
-Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information](http://malllabiisc.github.io/publications/papers/reside_emnlp18.pdf).
+Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information](http://aclweb.org/anthology/D18-1157).
 
 ![](https://github.com/malllabiisc/RESIDE/blob/master/images/overview.png)*Overview of RESIDE (proposed method): RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention.*
 *Then, sentence embedding is concatenated with relation alias information, which comes from the Side Information Acquisition Section, before computing attention over sentences. Finally, bag representation with entity type information is fed to a softmax classifier. Please refer to paper for more details.* 
@@ -14,12 +14,13 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 - We use [Riedel NYT](http://iesl.cs.umass.edu/riedel/ecml/) and [Google IISc Distant Supervision (GIDS)](https://arxiv.org/pdf/1804.06987.pdf) dataset​ for evaluation.
 
-- The processed version of the datasets can be downloaded from [here](https://drive.google.com/file/d/1brGCxXm2ofbF_0HP4myfBSHphGg4v6BS/view?usp=sharing). The structure of the processed input data is as follows.
+- The processed version of the datasets can be downloaded from [RiedelNYT](https://drive.google.com/file/d/1UD86c_6O_NSBn2DYirk6ygaHy_fTL-hN/view?usp=sharing) and [GIDS](https://drive.google.com/file/d/1UMS4EmWv5SWXfaSl_ZC4DcT3dk3JyHeq/view?usp=sharing). The structure of the processed input data is as follows.
 
   ```java
   {
       "voc2id":   {"w1": 0, "w2": 1, ...},
       "type2id":  {"type1": 0, "type2": 1 ...},
+      "rel2id":   {"NA": 0, "/location/neighborhood/neighborhood_of": 1, ...}
       "max_pos": 123,
       "train": [
           {
@@ -41,8 +42,9 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
   }
   ```
 
-  * `voc2id` is the mapping of words to their unique identifier
-  * `type2id` is the maping of entity type to their unique identifier.
+  * `voc2id` is the mapping of word to its id
+  * `type2id` is the maping of entity type to its id.
+  * `rel2id` is the mapping of relation to its id. 
   * `max_pos` is the maximum position to consider for positional embeddings.
   * Each entry of `train`, `test` and `valid` is a bag of sentences, where
     * `X` denotes the sentences in bag as the list of list of word indices.
@@ -55,15 +57,15 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 ### Evaluate pretrained model:
 
-- `reside.py` contains TensorFlow (1.x) based implementation of RESIDE (proposed method).
-- Download the pretrained model's parameters from [here](https://drive.google.com/open?id=16yuV5SoxHEdAURTw5wrqYKR1cStQrzTw). 
-- Execute `evaluate.sh` for comparing pretrained RESIDE model against baselines (plots Precision-Recall curve). 
+- `reside.py` contains TensorFlow (1.x) based implementation of **RESIDE** (proposed method).
+- Download the pretrained model's parameters from [RiedelNYT](https://drive.google.com/file/d/1CUk10FTncaaZspAoh8YkHTML3RJHfW7e/view?usp=sharing) and [GIDS](https://drive.google.com/file/d/1X5pKkL6eOkGXw39baq0n9noBXa--5EhE/view?usp=sharing) (put downloaded folders in `checkpoint` directory). 
+- Execute `evaluate.sh` for comparing pretrained **RESIDE** model against baselines (plots Precision-Recall curve). 
 
 ### Side Information:
 
-- **Entity Type** information provided in `side_info/type_info.zip`. 
+- **Entity Type** information for both the datasets is provided in `side_info/type_info.zip`. 
   * Entity type information can be used directly in the model.
-- **Relation Alias Information** is provided in `side_info/relation_alias.zip`.
+- **Relation Alias Information** for both the datasets is provided in `side_info/relation_alias.zip`.
   * The preprocessing code for using relation alias information: `rel_alias_side_info.py`. 
   * Following figure summarizes the method:
   ![](https://github.com/malllabiisc/RESIDE/blob/master/images/relation_alias.png)
@@ -83,17 +85,29 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 * Finally, run `python plot_pr.py -name new_run` to get the plot.
 
-### Citation:
+### Preprocessing a new dataset:
 
+* The following code is for getting a new dataset in the required format (`riedel_processed.pkl`) for `reside.py`.
+* Get the data in the same format as has been put in [riedel_raw](https://drive.google.com/file/d/1D7bZPvrSAbIPaFSG7ZswYQcPA3tmouCw/view?usp=sharing) file.
+* For generating bags from sentences execute `make_bags.py`. Then, for converting generated bags to pickle format execute `final_process.py`.
+
+### Citation:
 Please cite the following paper if you use this code in your work.
 
 ```tex
-@inproceedings{Vashishth2018reside,
-	author = {Vashishth, Shikhar and Joshi, Rishabh and Prayaga, Sai Suman and Bhattacharyya, Chiranjib and Talukdar, Partha},
-	booktitle = {Empirical Methods in Natural Language Processing (EMNLP)},
-	title = {RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information},
-	url = {https://shikhar-vashishth.github.io/assets/pdf/reside_emnlp18.pdf},
-	year = {2018}
+@InProceedings{reside2018,
+  author = 	"Vashishth, Shikhar
+		and Joshi, Rishabh
+		and Prayaga, Sai Suman
+		and Bhattacharyya, Chiranjib
+		and Talukdar, Partha",
+  title = 	"RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information",
+  booktitle = 	"Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing",
+  year = 	"2018",
+  publisher = 	"Association for Computational Linguistics",
+  pages = 	"1257--1266",
+  location = 	"Brussels, Belgium",
+  url = 	"http://aclweb.org/anthology/D18-1157"
 }
 ```
 

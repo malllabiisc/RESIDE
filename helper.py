@@ -19,6 +19,22 @@ def getEmbeddings(model, wrd_list, embed_dims):
 
 	return np.array(embed_list, dtype=np.float32)
 
+def getPhr2vec(model, phr_list, embed_dims):	
+	wrd_list = []
+	embeds   = np.zeros((len(phr_list), embed_dims), np.float32)
+	
+	for i, phr in enumerate(phr_list):
+		wrds = phr.split()
+		vec  = np.zeros((embed_dims,), np.float32)
+		
+		for wrd in wrds:
+			if wrd in embed_map: 	vec += model.word_vec(wrd)
+			else: 			vec += np.random.normal(size=embed_dims, loc=0, scale=0.05)
+		vec = vec / len(wrds)
+		embeds[i, :] = vec
+		
+	return embeds
+
 def rel_encoder(model, phr_list, embed_dims):
 	embed_list = []
 
