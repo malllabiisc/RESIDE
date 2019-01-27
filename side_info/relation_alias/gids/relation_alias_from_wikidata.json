@@ -1,0 +1,41 @@
+{
+  "/people/deceased_person/place_of_death": [
+    "place of death",
+    "death place",
+    "location of death",
+    "death location",
+    "deathplace",
+    "POD",
+    "died in"
+  ],
+  "/people/person/education./education/education/degrees": [
+    "academic degree",
+    "degree",
+    "diploma"
+  ],
+  "/people/person/education./education/education/institution": [
+    "education",
+    "alumni of",
+    "alumnus of",
+    "alumna of",
+    "college attended",
+    "university attended",
+    "school attended",
+    "studied at",
+    "alma mater",
+    "graduate of",
+    "graduated from"
+  ],
+  "/people/person/place_of_birth": [
+    "location of birth",
+    "born in",
+    "birth place",
+    "location born",
+    "birthplace",
+    "birth city",
+    "born at",
+    "POB",
+    "place of birth",
+    "birth location"
+  ]
+}

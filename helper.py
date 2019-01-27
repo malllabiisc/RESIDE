@@ -1,6 +1,7 @@
-import numpy as np, os, sys, random, json, gensim, argparse
-import pickle, uuid, time, pdb
+import numpy as np, os, sys, random,  argparse
+import pickle, uuid, time, pdb, json, gensim, itertools
 import logging, logging.config, pathlib
+
 from collections import defaultdict as ddict
 from nltk.tokenize import word_tokenize
 from pprint import pprint
@@ -28,7 +29,7 @@ def getPhr2vec(model, phr_list, embed_dims):
 		vec  = np.zeros((embed_dims,), np.float32)
 		
 		for wrd in wrds:
-			if wrd in embed_map: 	vec += model.word_vec(wrd)
+			if wrd in model.vocab: 	vec += model.word_vec(wrd)
 			else: 			vec += np.random.normal(size=embed_dims, loc=0, scale=0.05)
 		vec = vec / len(wrds)
 		embeds[i, :] = vec
@@ -96,3 +97,12 @@ def get_logger(name, log_dir, config_dir):
 # Splits inp_list into lists of size chunk_size
 def getChunks(inp_list, chunk_size):
 	return [inp_list[x:x+chunk_size] for x in range(0, len(inp_list), chunk_size)]
+
+# Paritions a given list into chunks of size n
+def partition(lst, n):
+        division = len(lst) / float(n)
+        return [ lst[int(round(division * i)): int(round(division * (i + 1)))] for i in range(n) ]
+
+# Merges list of list into list
+def mergeList(list_of_list):
+	return list(itertools.chain.from_iterable(list_of_list))

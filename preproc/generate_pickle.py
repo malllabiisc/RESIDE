@@ -1,38 +1,40 @@
+import sys; 
+sys.path.append('./')
 
-import os, sys, pdb, numpy as np, random, argparse, codecs, pickle, time, json, itertools, re, operator
-from scipy.spatial.distance import cdist
-
-from pprint import pprint
-from collections import defaultdict as ddict
-from joblib import Parallel, delayed
-from pymongo import MongoClient
-from nn.nn_helper import *
 from helper import *
+from scipy.spatial.distance import cdist
+from joblib import Parallel, delayed
 from orderedset import OrderedSet
 
 parser = argparse.ArgumentParser(description='Main Preprocessing program')
 parser.add_argument('-test', 	 dest="FULL", 		action='store_false')
-parser.add_argument('-sample', 	 dest="sample", 	default=2000,   	type=int)
-parser.add_argument('-pos', 	 dest="MAX_POS", 	default=60,   	 	type=int)
-parser.add_argument('-mvoc', 	 dest="MAX_VOCAB", 	default=150000,  	type=int)
+parser.add_argument('-pos', 	 dest="MAX_POS", 	default=60,   	 	type=int, help='Max position to consider for positional embeddings')
+parser.add_argument('-mvoc', 	 dest="MAX_VOCAB", 	default=150000,  	type=int, help='Maximum vocabulary to consider')
 parser.add_argument('-maxw', 	 dest="MAX_WORDS", 	default=100, 	 	type=int)
 parser.add_argument('-minw', 	 dest="MIN_WORDS", 	default=5, 	 	type=int)
 parser.add_argument('-num', 	 dest="num_procs", 	default=40, 	 	type=int)
 parser.add_argument('-thresh', 	 dest="thresh", 	default=0.65, 	 	type=float)
 parser.add_argument('-nfinetype',dest='wFineType', 	action='store_false')
-parser.add_argument('-embed',    dest="embed_loc", 	default='./glove/glove.6B.300d_word2vec.txt')
-parser.add_argument('-embed_dim',default=300, 		type=int)
 parser.add_argument('-metric',   default='cosine')
 parser.add_argument('-data', 	 default='riedel')
+
+# Change the below two arguments together
+parser.add_argument('-embed',    dest="embed_loc", 	default='./glove/glove.6B.50d_word2vec.txt')
+parser.add_argument('-embed_dim',default=50, 		type=int)
+
+# Below arguments can be used for testing processing script (process a part of data instead of full)
+parser.add_argument('-sample', 	 dest='FULL', 		action='store_false', 	 		help='To process the entire data or a sample of it')
+parser.add_argument('-samp_size',dest='sample_size', 	default=200, 	 	type=int,	help='Sample size to use for testing processing script')
 args = parser.parse_args()
 
-ent2type      = json.loads(open('./side_info/type_info.json').read())
-rel2alias     = json.loads(open('./side_info/relation_alias_from_wikidata_ppdb_extended.json').read())
-rel2id        = json.loads(open('./preproc/relation2id.json').read())
+print('Starting Data Pre-processing script...')
+ent2type      = json.loads(open('./side_info/entity_type/{}/type_info.json'.format(args.data)).read())
+rel2alias     = json.loads(open('./side_info/relation_alias/{}/relation_alias_from_wikidata_ppdb_extended.json'.format(args.data)).read())
+rel2id        = json.loads(open('./preproc/{}_relation2id.json'.format(args.data)).read())
 id2rel 	      = dict([(v, k) for k, v in rel2id.items()])
 alias2rel     = ddict(set)
 alias2id      = {}
-embed_model   = gensim.models.KeyedVectors.load_word2vec_format(self.p.embed_loc, binary=False)
+embed_model   = gensim.models.KeyedVectors.load_word2vec_format(args.embed_loc, binary=False)
 
 for rel, aliases in rel2alias.items():
 	for alias in aliases:
@@ -42,7 +44,7 @@ for rel, aliases in rel2alias.items():
 			alias2id[alias] = len(alias2id)
 			alias2rel[alias2id[alias]].add(rel)
 
-temp = sorted(alias2id.items(), key=operator.itemgetter(1))
+temp = sorted(alias2id.items(), key= lambda x: x[1])
 temp.sort(key = lambda x:x[1])
 alias_list, _ = zip(*temp)
 alias_embed   = getPhr2vec(embed_model, alias_list, args.embed_dim)
@@ -53,7 +55,13 @@ data = {
 	'test':  []
 }
 
-def read_file(file_path, split):
+def get_index(arr, ele):
+	if ele in arr:  return arr.index(ele)
+	else:       return -1
+
+def read_file(file_path):
+	temp = []
+
 	with open(file_path) as f:
 		for k, line in enumerate(f):
 			bag   = json.loads(line.strip())
@@ -68,8 +76,32 @@ def read_file(file_path, split):
 
 			for sent in bag['sents']:
 
-				if sent['sub_off'] == [] or sent['obj_off'] == []: continue
-				spans = [sent['sub_off'][0]] + [sent['obj_off'][0]]
+				if len(bag['sub']) > len(bag['obj']):
+					sub_idx   	  = [i for i, e in enumerate(sent['rsent'].split()) if e == bag['sub']]
+					sub_start_off 	  = [len(' '.join(sent['rsent'].split()[0: idx])) + (1 if idx != 0 else 0) for idx in sub_idx]
+					if sub_start_off == []: sub_start_off = [m.start() for m in re.finditer(bag['sub'].replace('_', ' '), sent['rsent'].replace('_', ' '))]
+					reserve_span      = [(start_off, start_off + len(bag['sub'])) for start_off in sub_start_off]
+
+					obj_idx   	  = [i for i, e in enumerate(sent['rsent'].split()) if e == bag['obj']]
+					obj_start_off 	  = [len(' '.join(sent['rsent'].split()[0: idx])) + (1 if idx != 0 else 0) for idx in obj_idx ]
+					if obj_start_off == []: obj_start_off = [m.start() for m in re.finditer(bag['obj'].replace('_', ' '), sent['rsent'].replace('_', ' '))]
+					obj_start_off 	  = [off for off in obj_start_off if all([off < spn[0] or off > spn[1] for spn in reserve_span])]
+				else:
+					obj_idx   	  = [i for i, e in enumerate(sent['rsent'].split()) if e == bag['obj']]
+					obj_start_off 	  = [len(' '.join(sent['rsent'].split()[0: idx])) + (1 if idx != 0 else 0) for idx in obj_idx]
+					if obj_start_off == []: obj_start_off = [m.start() for m in re.finditer(bag['obj'].replace('_', ' '), sent['rsent'].replace('_', ' '))]
+					reserve_span 	  = [(start_off, start_off + len(bag['obj'])) for start_off in obj_start_off]
+
+					sub_idx   	  = [i for i, e in enumerate(sent['rsent'].split()) if e == bag['sub']]
+					sub_start_off 	  = [len(' '.join(sent['rsent'].split()[0: idx])) + (1 if idx != 0 else 0) for idx in sub_idx ]
+					if sub_start_off == []: sub_start_off = [m.start() for m in re.finditer(bag['sub'].replace('_', ' '), sent['rsent'].replace('_', ' '))]
+					sub_start_off 	  = [off for off in sub_start_off if all([off < spn[0] or off > spn[1] for spn in reserve_span])]
+
+				sub_off = [(start_off, start_off + len(bag['sub']), 'sub') for start_off in sub_start_off]
+				obj_off = [(start_off, start_off + len(bag['obj']), 'obj') for start_off in obj_start_off]
+
+				if sub_off == [] or obj_off == [] or 'corenlp' not in sent: continue
+				spans = [sub_off[0]] + [obj_off[0]]
 				off_begin, off_end, _ = zip(*spans)
 				
 				tid_map, tid2wrd = ddict(dict), ddict(list)
@@ -78,7 +110,7 @@ def read_file(file_path, split):
 				sub_pos, obj_pos = None, None
 				dep_links 	 = []
 
-				for s_n, corenlp_sent in enumerate(sent['corenlp']['sentences']):						# Iterating over sentences
+				for s_n, corenlp_sent in enumerate(sent['corenlp']['sentences']):				# Iterating over sentences
 
 					i, tokens = 0, corenlp_sent['tokens']
 
@@ -114,7 +146,7 @@ def read_file(file_path, split):
 					continue
 
 				wrds    = ['_'.join(e).lower() 	for e in tid2wrd.values()]
-				pos1	= [i - sub_pos 		for i in range(tok_idx-1)]							# tok_id = (number of tokens + 1)
+				pos1	= [i - sub_pos 		for i in range(tok_idx-1)]					# tok_id = (number of tokens + 1)
 				pos2	= [i - obj_pos 		for i in range(tok_idx-1)]
 
 				phrases = set()
@@ -173,7 +205,7 @@ def read_file(file_path, split):
 				dep_links_list.append(dep_links)
 				phrase_list.append(list(phrases - {''}))
 
-			data[split].append({
+			temp.append({
 				'sub':			bag['sub'],
 				'obj':			bag['obj'],
 				'rels':			bag['rel'],
@@ -183,16 +215,19 @@ def read_file(file_path, split):
 				'wrds_list': 		wrds_list,
 				'pos1_list': 		pos1_list,
 				'pos2_list': 		pos2_list,
-				'sub_type':		ent2type[bag['sub_id']],2
+				'sub_type':		ent2type[bag['sub_id']],
 				'obj_type':		ent2type[bag['obj_id']],
 				'dep_links_list':	dep_links_list,
 			})
 				
 			if k % 1000 == 0: print('Completed {}'.format(k))
-			if not args.FULL and k > args.sample: break
+			if not args.FULL and k > args.sample_size: break
+	return temp
 
-read_file( 'data/{}_train_bags.json'.format(args.src), 'train')
-read_file( 'data/{}_test_bags.json'. format(args.src), 'test')
+print('Reading train bags'); data['train'] = read_file( 'data/{}_train_bags.json'.format(args.data))
+print('Reading test bags');  data['test']  = read_file( 'data/{}_test_bags.json'. format(args.data))
+
+print('Bags processed: Train:{}, Test:{}'.format(len(data['train']), len(data['test'])))
 
 """*************************** REMOVE OUTLIERS **************************"""
 del_cnt = 0

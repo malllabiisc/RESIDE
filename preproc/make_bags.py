@@ -1,19 +1,14 @@
-import os, sys, ipdb as pdb, numpy as np, random, argparse, codecs, pickle, time, json, re
-from pprint import pprint
-from collections import defaultdict as ddict
-from joblib import Parallel, delayed
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from pymongo.errors import BulkWriteError
+import sys; 
+sys.path.append('./')
+from helper import *
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('-data', default='riedel')
 args = parser.parse_args()
 
-count = 0
-miss_cnt = 0
-rel2id = json.loads(open('./preproc/relation2id.txt').read())
+rel2id	 = json.loads(open('./preproc/{}_relation2id.json'.format(args.data)).read())
 
+print('Constructing training bags...')
 train_data = ddict(lambda: {'rels': ddict(list)})
 with open('./data/{}_train.json'.format(args.data)) as f:
 	for i, line in enumerate(f):
@@ -27,12 +22,16 @@ with open('./data/{}_train.json'.format(args.data)) as f:
 
 		train_data[_id]['rels'][rel2id.get(data['rel'], rel2id['NA'])].append({
 				'sent': 	data['sent'],
+				'corenlp':	data['corenlp'],
 				'rsent': 	data['rsent'],
 				'openie':	data['openie'],
 		})
 
-		if i % 10000 == 0: print('Completed {}/{}, {}'.format(i, miss_cnt, time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")))
+		if i+1 % 1000 == 0: 
+			print('Completed {}, {}'.format(i, time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")))
+			break;
 
+print('Constructing test bags...')
 test_data = ddict(lambda : {'sents': [], 'rels': set()})
 with open('./data/{}_test.json'.format(args.data)) as f:
 	for i, line in enumerate(f):
@@ -47,11 +46,14 @@ with open('./data/{}_test.json'.format(args.data)) as f:
 
 		test_data[_id]['sents'].append({
 				'sent': 	data['sent'],
+				'corenlp':	data['corenlp'],
 				'rsent': 	data['rsent'],
 				'openie':	data['openie'],
 		})
 
-		if i % 10000 == 0: print('Completed {}/{}, {}'.format(i, miss_cnt, time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")))
+		if i+1 % 1000 == 0: 
+			print('Completed {}, {}'.format(i, time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")))
+			break
 
 count = 0
 with open('./data/{}_train_bags.json'.format(args.data), 'w') as f:
