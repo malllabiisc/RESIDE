@@ -101,7 +101,7 @@ Please cite the following paper if you use this code in your work.
 		and Prayaga, Sai Suman
 		and Bhattacharyya, Chiranjib
 		and Talukdar, Partha",
-  title = 	"RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information",
+  title = 	"{RESIDE}: Improving Distantly-Supervised Neural Relation Extraction using Side Information",
   booktitle = 	"Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing",
   year = 	"2018",
   publisher = 	"Association for Computational Linguistics",
