@@ -91,6 +91,10 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 * Get the data in the same format as followed in [riedel_raw](https://drive.google.com/file/d/1D7bZPvrSAbIPaFSG7ZswYQcPA3tmouCw/view?usp=sharing) for `Riedel NYT` dataset.
 * Finally, run the script `preprocess.sh`.  `make_bags.py` is used for generating bags from sentence. `generate_pickle.py` is for converting the data in the required pickle format.
 
+### Running pretrained model on new dataset:
+
+- The code for running pretrained model on a new dataset is included in `online` directory.
+
 ### Citation:
 Please cite the following paper if you use this code in your work.
 
