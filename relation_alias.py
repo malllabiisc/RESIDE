@@ -24,10 +24,10 @@ for rel, aliases in rel2alias.items():
 temp = sorted(alias2id.items(), key=lambda x: x[1])
 temp.sort(key = lambda x:x[1])
 alias_list, _ = zip(*temp)
-alias_embed   = rel_encoder(model, alias_list, args.embed_dim)		# Encoding relation aliases from KG
+alias_embed   = getPhr2vec(model, alias_list, args.embed_dim)		# Encoding relation aliases from KG
 
 def get_probable_rel(rel_phrs):
-	phr_embed = rel_encoder(model, rel_phrs, args.embed_dim)	# Encoding given relation phrases
+	phr_embed = getPhr2vec(model, rel_phrs, args.embed_dim)	# Encoding given relation phrases
 	dist      = cdist(phr_embed, alias_embed, metric=args.metric)	# Computing similarity between given phrases and relation aliases from KG
 	rels = set()
 	for i, cphr in enumerate(np.argmin(dist, 1)):

@@ -10,8 +10,19 @@ NOTE: View this file with tab size 8.
 
 class RESIDE(object):
 
-	# Generates batches of multiple bags
 	def getBatches(self, data, shuffle = True):
+		"""
+	        Generates batches of multiple bags
+
+	        Parameters
+	        ----------
+	        data:		Data to be used for creating batches. Dataset as list of bags where each bag is a dictionary
+	        shuffle:	Decides whether to shuffle the data or not.
+	        
+	        Returns
+	        -------
+	        Generator for creating batches. 
+	        """
 		if shuffle: random.shuffle(data)
 
 		for chunk in getChunks(data, self.p.batch_size):			# chunk = batch
@@ -37,8 +48,20 @@ class RESIDE(object):
 
 			yield batch
 
-	# Split bags which are too big (contains greater than chunk_size sentences)
+	
 	def splitBags(self, data, chunk_size):
+		"""
+		Split bags which are too big (contains greater than chunk_size sentences)
+
+		Parameters
+		----------
+		data:	Dataset as list of bags
+
+		Returns
+		-------
+		Data after preprocessing
+		"""
+
 		for dtype in ['train']:
 
 			for i in range(len(data[dtype])-1, -1, -1):
@@ -64,8 +87,19 @@ class RESIDE(object):
 						data[dtype].append(res)
 		return data
 
-	# Required for P@N metric evaluation
 	def getPdata(self, data):
+		"""
+		Creates data required for P@N metric evaluation
+
+		Parameters
+		----------
+		data:	Dataset as list of bags
+
+		Returns
+		-------
+		p_one and p_two are dataset for P@100 and P@200 evaluation. P@All is the original data itself
+		"""
+
 		p_one = []
 		p_two = []
 
@@ -99,8 +133,28 @@ class RESIDE(object):
 
 		return p_one, p_two
 
-	# Reads the data from pickle file
 	def load_data(self):
+		"""
+		Reads the data from pickle file
+
+		Parameters
+		----------
+		self.p.dataset: The path of the dataset to be loaded
+
+		Returns
+		-------
+		self.voc2id:		Mapping of word to its unique identifier
+		self.Id2voc:		Inverse of self.voc2id
+		self.type2id:		Mapping of entity type to its unique identifier
+		self.type_num:		Total number of entity types 
+		self.max_pos:		Maximum positional embedding
+		self.num_class:		Total number of relations to be predicted
+		self.num_deLabel:	Number of dependency labels
+		self.wrd_list:		Words in vocabulary
+		self.test_one:		Data required for P@100 evaluation
+		self.test_two:		Data required for P@200 evaluation
+		self.data:		Datatset as a list of bags, where each bag is a dictionary as described 
+		"""
 		data = pickle.load(open(self.p.dataset, 'rb'))
 
 		self.voc2id 	   = data['voc2id']
@@ -126,6 +180,10 @@ class RESIDE(object):
 
 
 	def add_placeholders(self):
+		"""
+		Defines the placeholder required for the model
+		"""
+
 		self.input_x  		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_data')			# Tokens ids of sentences
 		self.input_y 		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_labels')			# Actual relation of the bag
 		self.input_pos1 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_pos1')			# Position ids wrt entity 1
@@ -138,9 +196,8 @@ class RESIDE(object):
 		self.input_objtype_len 	= tf.placeholder(tf.float32, shape=[None],   	   name='input_objtype_len')		# Max number of types of entity 2 
 
 		# Relation Alias Side Information
-		self.input_proby 	= tf.placeholder(tf.float32, shape=[None, None],   name='input_prob_y')			# Probable relation match
-		self.input_proby_ind 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_prob_ind')
-		self.input_proby_len 	= tf.placeholder(tf.float32, shape=[None],   	   name='input_prob_len')		# Max number of relation matched
+		self.input_proby_ind 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_prob_ind')		# Relation Alias information Indices
+		self.input_proby_len 	= tf.placeholder(tf.float32, shape=[None],   	   name='input_prob_len')		# Max number of relations per bag for the entire batch
 
 		self.x_len		= tf.placeholder(tf.int32,   shape=[None],         name='input_len')			# Number of words in sentences in a batch
 		self.sent_num 		= tf.placeholder(tf.int32,   shape=[None, 3], 	   name='sent_num')			# Stores which sentences belong to which bag
@@ -148,25 +205,47 @@ class RESIDE(object):
 		self.total_bags 	= tf.placeholder(tf.int32,   shape=(), 		   name='total_bags')			# Total number of bags in a batch
 		self.total_sents 	= tf.placeholder(tf.int32,   shape=(), 		   name='total_sents')			# Total number of sentences in a batch
 
-		self.de_adj_ind 	= tf.placeholder(tf.int64,   shape=[self.num_deLabel, None, None, 2], name='de_adj_ind')# Dependency graph information (Storing only indices and data)
-		self.de_adj_data 	= tf.placeholder(tf.float32, shape=[self.num_deLabel, None, None], name='de_adj_data')
+		self.de_adj_ind 	= tf.placeholder(tf.int64,   shape=[self.num_deLabel, None, None,2], name='de_adj_ind') # Dependency graph indices
+		self.de_adj_data 	= tf.placeholder(tf.float32, shape=[self.num_deLabel, None, None],  name='de_adj_data')	# Dependency graph data
 
 		self.dropout 		= tf.placeholder_with_default(self.p.dropout, 	  shape=(), name='dropout')		# Dropout used in GCN Layer
 		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')		# Dropout used in Bi-LSTM
 
-	# Pads the data in a batch
 	def padData(self, data, seq_len):
-		temp = np.zeros((len(data), seq_len), np.int32)
-		mask = np.zeros((len(data), seq_len), np.float32)
+		"""
+		Pads the data in a batch | Used as a helper function by pad_dynamic
+
+		Parameters
+		----------
+		data:		batch to be padded
+		seq_len:	maximum number of words in the batch
+
+		Returns
+		-------
+		Padded data and mask
+		"""
+		pad_data = np.zeros((len(data), seq_len), np.int32)
+		mask     = np.zeros((len(data), seq_len), np.float32)
 
 		for i, ele in enumerate(data):
-			temp[i, :len(ele)] = ele[:seq_len]
-			mask[i, :len(ele)] = np.ones(len(ele[:seq_len]), np.float32)
+			pad_data[i, :len(ele)] = ele[:seq_len]
+			mask    [i, :len(ele)] = np.ones(len(ele[:seq_len]), np.float32)
 
-		return temp, mask
+		return pad_data, mask
 
-	# Generates the one-hot representation
 	def getOneHot(self, data, num_class, isprob=False):
+		"""
+		Generates the one-hot representation
+
+		Parameters
+		----------
+		data:		Batch to be padded
+		num_class:	Total number of relations 
+
+		Returns
+		-------
+		One-hot representation of batch
+		"""
 		temp = np.zeros((len(data), num_class), np.int32)
 		for i, ele in enumerate(data):
 			for rel in ele:
@@ -174,8 +253,24 @@ class RESIDE(object):
 				else:		temp[i, rel]   = 1
 		return temp
 
-	# Pads each batch during runtime.
 	def pad_dynamic(self, X, pos1, pos2, sub_type, obj_type, rel_alias):
+		"""
+		Pads each batch during runtime.
+
+		Parameters
+		----------
+		X:		For each sentence in the bag, list of words
+		pos1:		For each sentence in the bag, list position of words with respect to subject
+		pos2:		For each sentence in the bag, list position of words with respect to object
+		sub_type:	For each sentence in the bag, Entity type information of the subject
+		obj_type:	For each sentence in the bag, Entity type information of the object
+		rel_aliaes:	For each sentence in the bag, Relation Alias information
+
+		Returns
+		-------
+		x_pad		Padded words 
+		x_len		Number of sentences in each , pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len
+		"""
 		seq_len, max_et, max_type, max_proby = 0, 0, 0, 0
 		subtype_len, objtype_len, rel_alias_len = [], [], []
 
@@ -207,7 +302,21 @@ class RESIDE(object):
 		return x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len
 
 
-	def create_feed_dict(self, batch, wLabels=True, dtype='train'):									# Where putting dropout for train?
+	def create_feed_dict(self, batch, wLabels=True, split='train'):									# Where putting dropout for train?
+		"""
+		Creates a feed dictionary for the batch
+
+		Parameters
+		----------
+		batch:		contains a batch of bags
+		wLabels:	Whether batch contains labels or not
+		split:		Indicates the split of the data - train/valid/test
+
+
+		Returns
+		-------
+		feed_dict	Feed dictionary to be fed during sess.run
+		"""
 		X, Y, pos1, pos2, sent_num, sub_type, obj_type, rel_alias = batch['X'], batch['Y'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['ProbY']
 		total_sents = len(batch['X'])
 		total_bags  = len(batch['Y'])
@@ -222,7 +331,6 @@ class RESIDE(object):
 		feed_dict[self.input_pos2]		= np.array(pos2_pad)
 		feed_dict[self.input_subtype]		= np.array(subtype)
 		feed_dict[self.input_objtype]		= np.array(objtype)
-		feed_dict[self.input_proby]		= np.array(proby)
 		feed_dict[self.x_len] 			= np.array(x_len)
 		feed_dict[self.seq_len]			= seq_len
 		feed_dict[self.total_sents]		= total_sents
@@ -238,7 +346,7 @@ class RESIDE(object):
 		feed_dict[self.de_adj_ind], \
 		feed_dict[self.de_adj_data] 		= self.get_adj(batch['DepEdges'], total_sents, seq_len, self.num_deLabel)
 
-		if dtype != 'train':
+		if split != 'train':
 			feed_dict[self.dropout]     = 1.0
 			feed_dict[self.rec_dropout] = 1.0
 		else:
@@ -247,8 +355,22 @@ class RESIDE(object):
 
 		return feed_dict
 
-	# Stores the adjacency matrix as indices and data for feeding to TensorFlow
 	def get_adj(self, edgeList, batch_size, max_nodes, max_labels):
+		"""
+		Stores the adjacency matrix as indices and data for feeding to TensorFlow
+
+		Parameters
+		----------
+		edgeList:	List of list of edges 
+		batch_size:	Number of bags in a batch
+		max_nodes:	Maximum number of nodes in the graph
+		max_labels:	Maximum number of edge labels in the graph 
+
+		Returns
+		-------
+		adj_mat_ind 	indices of adjacency matrix
+		adj_mat_data	data of adjacency matrix
+		"""
 		max_edges = 0
 		for edges in edgeList:
 			max_edges = max(max_edges, len(edges))
@@ -265,18 +387,29 @@ class RESIDE(object):
 
 		return adj_mat_ind, adj_mat_data
 
-	# GCN Layer Implementation 
-	def GCNLayer(self, 	gcn_in, 	# Input to GCN Layer
-				in_dim, 	# Dimension of input to GCN Layer 
-				gcn_dim, 	# Hidden state dimension of GCN
-				batch_size, 	# Batch size
-				max_nodes, 	# Maximum number of nodes in graph
-				max_labels, 	# Maximum number of edge labels
-				adj_ind, 	# Adjacency matrix indices
-				adj_data, 	# Adjacency matrix data (all 1's)
-				w_gating=True,  # Whether to include gating in GCN
-				num_layers=1, 	# Number of GCN Layers
-				name="GCN"):
+	def GCNLayer(self, gcn_in, in_dim, gcn_dim, batch_size, max_nodes, max_labels, adj_ind, adj_data, w_gating=True, num_layers=1, name="GCN"):
+		"""
+		GCN Layer Implementation
+
+		Parameters
+		----------
+		gcn_in:		Input to GCN Layer
+		in_dim:		Dimension of input to GCN Layer 
+		gcn_dim:	Hidden state dimension of GCN
+		batch_size:	Batch size
+		max_nodes:	Maximum number of nodes in graph
+		max_labels:	Maximum number of edge labels
+		adj_ind:	Adjacency matrix indices
+		adj_data:	Adjacency matrix data (all 1's)
+		w_gating:	Whether to include gating in GCN
+		num_layers:	Number of GCN Layers
+		name 		Name of the layer (used for creating variables, keep it different for different layers)
+
+		Returns
+		-------
+		out		List of output of different GCN layers with first element as input itself, i.e., [gcn_in, gcn_layer1_out, gcn_layer2_out ...]
+		"""
+
 		out = []
 		out.append(gcn_in)
 
@@ -372,6 +505,18 @@ class RESIDE(object):
 
 
 	def add_model(self):
+		"""
+		Creates the Computational Graph
+
+		Parameters
+		----------
+
+		Returns
+		-------
+		nn_out:		Logits for each bag in the batch
+		accuracy:	accuracy for the entire batch
+		"""
+
 		in_wrds, in_pos1, in_pos2 = self.input_x, self.input_pos1, self.input_pos2
 
 		with tf.variable_scope('Embeddings') as scope:
@@ -481,19 +626,43 @@ class RESIDE(object):
 			y_actual = tf.argmax(self.input_y, axis=1)
 			accuracy = tf.reduce_mean(tf.cast(tf.equal(y_pred, y_actual), tf.float32))
 
-		''' Debugging command :
+		''' Debugging command:
+			Put the below command anywhere and get the values of the tensors
 			res  = debug_nn([de_out], self.create_feed_dict( next(self.getBatches(self.data['train'])) ) ); pdb.set_trace()
 		'''
 		return nn_out, accuracy
 
 
 	def add_loss(self, nn_out):
+		"""
+		Computes loss based on logits and actual labels
+
+		Parameters
+		----------
+		nn_out:		Logits for each bag in the batch
+
+		Returns
+		-------
+		loss:		Computes loss based on prediction and actual labels of the bags
+		"""
+
 		with tf.name_scope('Loss_op'):
 			loss  = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=nn_out, labels=self.input_y))
 			if self.regularizer != None: loss += tf.contrib.layers.apply_regularization(self.regularizer, tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
 		return loss
 
 	def add_optimizer(self, loss):
+		"""
+		Add optimizer for training variables
+
+		Parameters
+		----------
+		loss:		Computed loss
+
+		Returns
+		-------
+		train_op:	Training optimizer
+		"""
 		with tf.name_scope('Optimizer'):
 			if self.p.opt == 'adam' and not self.p.restore:
 				optimizer = tf.train.AdamOptimizer(self.p.lr)
@@ -503,6 +672,16 @@ class RESIDE(object):
 		return train_op
 
 	def __init__(self, params):
+		"""
+		Constructor for the main function. Loads data and creates computation graph. 
+
+		Parameters
+		----------
+		params:		Hyperparameters of the model
+
+		Returns
+		-------
+		"""
 		self.p  = params
 		self.logger = get_logger(self.p.name, self.p.log_dir, self.p.config_dir)
 
@@ -525,9 +704,29 @@ class RESIDE(object):
 		self.merged_summ = tf.summary.merge_all()
 		self.summ_writer = None
 
-	# Evaluate model on valid/test data
 	def predict(self, sess, data, wLabels=True, shuffle=False, label='Evaluating on Test'):
-		losses, accuracies, results, y_pred, y, logit_list, y_actual_hot = [], [], [], [], [], [], []
+		"""
+		Evaluate model on valid/test data
+
+		Parameters
+		----------
+		sess:		Session of tensorflow
+		data:		Data to evaluate on
+		wLabels:	Does data include labels or not
+		shuffle:	Shuffle data while before creates batches
+		label:		Log label to be used while logging
+
+		Returns
+		-------
+		losses:		Loss over the entire data
+		accuracies:	Overall Accuracy
+		y: 		Actual label
+		y_pred:		Predicted labels
+		logit_list:	Logit list for each bag in the data
+		y_actual_hot:	One hot represetnation of actual label for each bag in the data
+
+		"""
+		losses, accuracies, y_pred, y, logit_list, y_actual_hot = [], [], [], [], [], []
 		bag_cnt = 0
 
 		for step, batch in enumerate(self.getBatches(data, shuffle)):
@@ -543,17 +742,29 @@ class RESIDE(object):
 			y 	     += np.argmax(self.getOneHot(batch['Y'], self.num_class), 1).tolist()
 			bag_cnt      += len(batch['sent_num'])
 
-			results.append(pred_ind)
-
 			if step % 100 == 0:
 				self.logger.info('{} ({}/{}):\t{:.5}\t{:.5}\t{}'.format(label, bag_cnt, len(self.data['test']), np.mean(accuracies)*100, np.mean(losses), self.p.name))
 
 		self.logger.info('Test Accuracy: {}'.format(accuracy))
 
-		return np.mean(losses), results,  np.mean(accuracies)*100, y, y_pred, logit_list, y_actual_hot
+		return np.mean(losses), np.mean(accuracies)*100, y, y_pred, logit_list, y_actual_hot
 
-	# Runs one epoch of training
 	def run_epoch(self, sess, data, epoch, shuffle=True):
+		"""
+		Runs one epoch of training
+
+		Parameters
+		----------
+		sess:		Session of tensorflow
+		data:		Data to train on
+		epoch:		Epoch number
+		shuffle:	Shuffle data while before creates batches
+
+		Returns
+		-------
+		losses:		Loss over the entire data
+		Accuracy:	Overall accuracy
+		"""
 		losses, accuracies = [], []
 		bag_cnt = 0
 
@@ -574,8 +785,22 @@ class RESIDE(object):
 		self.logger.info('Training Loss:{}, Accuracy: {}'.format(np.mean(losses), accuracy))
 		return np.mean(losses), accuracy
 
-	# Calculates precision recall and F1 score
 	def calc_prec_recall_f1(self, y_actual, y_pred, none_id):
+		"""
+		Calculates precision recall and F1 score
+
+		Parameters
+		----------
+		y_actual:	Actual labels
+		y_pred:		Predicted labels
+		none_id:	Identifier used for denoting NA relation
+
+		Returns
+		-------
+		precision:	Overall precision
+		recall:		Overall recall
+		f1:		Overall f1
+		"""
 		pos_pred, pos_gt, true_pos = 0.0, 0.0, 0.0
 
 		for i in range(len(y_actual)):
@@ -594,9 +819,22 @@ class RESIDE(object):
 
 		return precision, recall, f1
 
-	# Computes P@N for N = 100, 200, and 300
 	def getPscore(self, data, label='P@N Evaluation'):
-		test_loss, test_pred, test_acc, y, y_pred, logit_list, y_hot = self.predict(sess, data, label)
+		"""
+		Computes P@N for N = 100, 200, and 300
+
+		Parameters
+		----------
+		data:		Data for P@N evaluation
+		label:		Log label to be used while logging
+
+		Returns
+		-------
+		P@100		Precision @ 100
+		P@200		Precision @ 200
+		P@300		Precision @ 300
+		"""
+		test_loss, test_acc, y, y_pred, logit_list, y_hot = self.predict(sess, data, label)
 
 		y_true   = np.array([e[1:] for e in y_hot]).  	 reshape((-1))
 		y_scores = np.array([e[1:] for e in logit_list]).reshape((-1))
@@ -613,8 +851,17 @@ class RESIDE(object):
 
 		return p_score(100), p_score(200), p_score(300)
 
-	# Trains the model and finally evaluates on test
 	def fit(self, sess):
+		"""
+		Trains the model and finally evaluates on test
+
+		Parameters
+		----------
+		sess:		Tensorflow session object
+
+		Returns
+		-------
+		"""
 		self.summ_writer = tf.summary.FileWriter('tf_board/{}'.format(self.p.name), sess.graph)
 		saver     = tf.train.Saver()
 		save_dir  = 'checkpoints/{}/'.format(self.p.name); make_dir(save_dir)
@@ -639,8 +886,8 @@ class RESIDE(object):
 		
 		''' Evaluation on Test '''
 		saver.restore(sess, save_path)
-		test_loss, test_pred, test_acc, y, y_pred, logit_list, y_hot = self.predict(sess, self.data['test'])
-		test_prec, test_rec, test_f1 				     = self.calc_prec_recall_f1(y, y_pred, 0)	# 0: ID for 'NA' relation
+		test_loss, test_acc, y, y_pred, logit_list, y_hot = self.predict(sess, self.data['test'])
+		test_prec, test_rec, test_f1 			  = self.calc_prec_recall_f1(y, y_pred, 0)	# 0: ID for 'NA' relation
 
 		y_true   = np.array([e[1:] for e in y_hot]).  	 reshape((-1))
 		y_scores = np.array([e[1:] for e in logit_list]).reshape((-1))
