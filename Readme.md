@@ -2,6 +2,7 @@
 
 Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information](http://aclweb.org/anthology/D18-1157).
 
+**Resources:** [Paper](http://aclweb.org/anthology/D18-1157) | [Slides](https://docs.google.com/presentation/d/1Oyo59qDjQi7SsyLp3GCWkFbq7Px7TPrXa-KiSqwq6e0/edit#slide=id.gc6f73a04f_0_0) | [Poster](https://shikhar-vashishth.github.io/assets/pdf/reside_poster.pdf) | [Video](https://vimeo.com/305199302)
 ![](https://github.com/malllabiisc/RESIDE/blob/master/images/overview.png)*Overview of RESIDE (proposed method): RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention.*
 *Then, sentence embedding is concatenated with relation alias information, which comes from the Side Information Acquisition Section, before computing attention over sentences. Finally, bag representation with entity type information is fed to a softmax classifier. Please refer to paper for more details.* 
 
