@@ -65,59 +65,59 @@ def getPhr2vec(model, phr_list, embed_dims):
 
 def set_gpu(gpus):
 	"""
-        Sets the GPU to be used for the run
+	Sets the GPU to be used for the run
 
-        Parameters
-        ----------
-        gpus:           List of GPUs to be used for the run
-        
-        Returns
-        -------    
-        """
+	Parameters
+	----------
+	gpus:           List of GPUs to be used for the run
+	
+	Returns
+	-------    
+	"""
 	os.environ["CUDA_DEVICE_ORDER"]    = "PCI_BUS_ID"
 	os.environ["CUDA_VISIBLE_DEVICES"] = gpus
 
 def checkFile(filename):
 	"""
-  	Check whether file is present or not
+	Check whether file is present or not
 
-        Parameters
-        ----------
-        filename:       Path of the file to check
-        
-        Returns
-        -------
-        """
+	Parameters
+	----------
+	filename:       Path of the file to check
+	
+	Returns
+	-------
+	"""
 	return pathlib.Path(filename).is_file()
 
 def make_dir(dir_path):
 	"""
-  	Creates the directory if doesn't exist
+	Creates the directory if doesn't exist
 
-        Parameters
-        ----------
-        dir_path:       Path of the directory
-        
-        Returns
-        -------
-        """
+	Parameters
+	----------
+	dir_path:       Path of the directory
+	
+	Returns
+	-------
+	"""
 	if not os.path.exists(dir_path): 
 		os.makedirs(dir_path)
 
 def debug_nn(res_list, feed_dict):
 	"""
-  	Function for debugging Tensorflow model      
+	Function for debugging Tensorflow model      
 
-        Parameters
-        ----------
-        res_list:       List of tensors/variables to view
-        feed_dict:	Feed dict required for getting values
-        
-        Returns
-        -------
-        Returns the list of values of given tensors/variables after execution
+	Parameters
+	----------
+	res_list:       List of tensors/variables to view
+	feed_dict:	Feed dict required for getting values
+	
+	Returns
+	-------
+	Returns the list of values of given tensors/variables after execution
 
-        """
+	"""
 	import tensorflow as tf
 	
 	config = tf.ConfigProto()
@@ -130,19 +130,19 @@ def debug_nn(res_list, feed_dict):
 
 def get_logger(name, log_dir, config_dir):
 	"""
-        Creates a logger object
+	Creates a logger object
 
-        Parameters
-        ----------
-        name:           Name of the logger file
-        log_dir:        Directory where logger file needs to be stored
-        config_dir:     Directory from where log_config.json needs to be read
-        
-        Returns
-        -------
-        A logger object which writes to both file and stdout
-                
-        """
+	Parameters
+	----------
+	name:           Name of the logger file
+	log_dir:        Directory where logger file needs to be stored
+	config_dir:     Directory from where log_config.json needs to be read
+	
+	Returns
+	-------
+	A logger object which writes to both file and stdout
+		
+	"""
 	make_dir(log_dir)
 	config_dict = json.load(open(config_dir + 'log_config.json'))
 	config_dict['handlers']['file_handler']['filename'] = log_dir + name.replace('/', '-')
@@ -158,45 +158,45 @@ def get_logger(name, log_dir, config_dir):
 
 def getChunks(inp_list, chunk_size):
 	"""
-        Splits inp_list into lists of size chunk_size
+	Splits inp_list into lists of size chunk_size
 
-        Parameters
-        ----------
-        inp_list:       List to be splittted
-        chunk_size:     Size of each chunk required
-        
-        Returns
-        -------
-        chunks of the inp_list each of size chunk_size, last one can be smaller (leftout data)
+	Parameters
+	----------
+	inp_list:       List to be splittted
+	chunk_size:     Size of each chunk required
+	
+	Returns
+	-------
+	chunks of the inp_list each of size chunk_size, last one can be smaller (leftout data)
 	"""
 	return [inp_list[x:x+chunk_size] for x in range(0, len(inp_list), chunk_size)]
 
 def partition(inp_list, n):
 	"""
-        Paritions a given list into chunks of size n
+	Paritions a given list into chunks of size n
 
-        Parameters
-        ----------
-        inp_list:       List to be splittted
-        n:     		Number of equal partitions needed
-        
-        Returns
-        -------
-        Splits inp_list into n equal chunks
+	Parameters
+	----------
+	inp_list:       List to be splittted
+	n:     		Number of equal partitions needed
+	
+	Returns
+	-------
+	Splits inp_list into n equal chunks
 	"""
-        division = len(inp_list) / float(n)
-        return [ inp_list[int(round(division * i)): int(round(division * (i + 1)))] for i in range(n) ]
+	division = len(inp_list) / float(n)
+	return [ inp_list[int(round(division * i)): int(round(division * (i + 1)))] for i in range(n) ]
 
 def mergeList(list_of_list):
 	"""
-        Merges list of list into a list
+	Merges list of list into a list
 
-        Parameters
-        ----------
-        list_of_list:   List of list
-        
-        Returns
-        -------
-        A single list (union of all given lists)
+	Parameters
+	----------
+	list_of_list:   List of list
+	
+	Returns
+	-------
+	A single list (union of all given lists)
 	"""
 	return list(itertools.chain.from_iterable(list_of_list))
