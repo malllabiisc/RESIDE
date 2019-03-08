@@ -5,7 +5,7 @@ import tensorflow as tf
 Abbreviations used in variable names:
 	Type:  Entity type side informatoin
 	ProbY, RelAlias: Relation alias side information
-NOTE: View this file with tab size 8.
+Recommendation: View this file with tab size 8.
 """
 
 class RESIDE(object):
@@ -269,7 +269,16 @@ class RESIDE(object):
 		Returns
 		-------
 		x_pad		Padded words 
-		x_len		Number of sentences in each , pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len
+		x_len		Number of sentences in each sentence, 
+		pos1_pad	Padded position 1
+		pos2_pad	Padded position 2
+		seq_len 	Maximum sentence length in the batch
+		subtype 	Padded subject entity type information
+		subtype_len 	Number of entity type for each bag in the batch
+		objtype 	Padded objective entity type information
+		objtype_len 	Number of entity type for each bag in the batch
+		rel_alias_ind 	Padded relation aliasses for each bag in the batch
+		rel_alias_len	Number of relation aliases 
 		"""
 		seq_len, max_et, max_type, max_proby = 0, 0, 0, 0
 		subtype_len, objtype_len, rel_alias_len = [], [], []
@@ -302,7 +311,7 @@ class RESIDE(object):
 		return x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len
 
 
-	def create_feed_dict(self, batch, wLabels=True, split='train'):									# Where putting dropout for train?
+	def create_feed_dict(self, batch, wLabels=True, split='train'):
 		"""
 		Creates a feed dictionary for the batch
 
@@ -311,7 +320,6 @@ class RESIDE(object):
 		batch:		contains a batch of bags
 		wLabels:	Whether batch contains labels or not
 		split:		Indicates the split of the data - train/valid/test
-
 
 		Returns
 		-------
