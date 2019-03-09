@@ -17,6 +17,7 @@ def plotPR(dataset):
 	precision,recall,threshold = precision_recall_curve(y_true,y_scores)
 	area_under 	   	   = average_precision_score(y_true, y_scores)
 	baselines_path 		   = './baselines_pr/{}/'.format(dataset)
+	print('Area under the curve: {:.3}'.format(area_under))
 
 	plt.plot(recall[:], precision[:], label='RESIDE', color ='red', lw=1, marker = 'o', markevery = 0.1, ms = 6)
 
@@ -51,7 +52,7 @@ def plotPR(dataset):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='')
-	parser.add_argument('-name', 	  default='pretrained_model')
+	parser.add_argument('-name', 	  default='pretrained_reside')
 	parser.add_argument('-dataset',   default='riedel_nyt')
 	args = parser.parse_args()
 	plotPR(args.dataset)
