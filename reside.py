@@ -739,7 +739,7 @@ class RESIDE(object):
 
 		for step, batch in enumerate(self.getBatches(data, shuffle)):
 
-			loss, logits, accuracy = sess.run([self.loss, self.logits, self.accuracy], feed_dict = self.create_feed_dict(batch, dtype='test'))
+			loss, logits, accuracy = sess.run([self.loss, self.logits, self.accuracy], feed_dict = self.create_feed_dict(batch, split='test'))
 			losses.    append(loss)
 			accuracies.append(accuracy)
 
