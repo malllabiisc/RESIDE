@@ -1,9 +1,12 @@
-from .base_model import *
+from base_model import *
 
 class RESIDE(Base):
 
 	def add_placeholders(self):
-		
+		"""
+		Defines the placeholder required for the model
+		"""
+
 		self.input_x  		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_data')			# Tokens ids of sentences
 		self.input_y 		= tf.placeholder(tf.int32,   shape=[None, None],   name='input_labels')			# Actual relation of the bag
 		self.input_pos1 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_pos1')			# Position ids wrt entity 1
@@ -12,15 +15,12 @@ class RESIDE(Base):
 		# Entity Type Side Information
 		self.input_subtype 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_subtype')		# Entity type information of entity 1
 		self.input_objtype 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_objtype')		# Entity type information of entity 2
-		self.input_subtype_len 	= tf.placeholder(tf.float32, shape=[None],   	name='input_subtype_len')		# Max number of types of entity 1
-		self.input_objtype_len 	= tf.placeholder(tf.float32, shape=[None],   	name='input_objtype_len')		# Max number of types of entity 2 
-		self.input_sub_prob = tf.placeholder(tf.float32, shape=[None, None], name='input_sub_prob')
-		self.input_obj_prob = tf.placeholder(tf.float32, shape=[None, None], name='input_obj_prob')
+		self.input_subtype_len 	= tf.placeholder(tf.float32, shape=[None],   	   name='input_subtype_len')		# Max number of types of entity 1
+		self.input_objtype_len 	= tf.placeholder(tf.float32, shape=[None],   	   name='input_objtype_len')		# Max number of types of entity 2 
 
 		# Relation Alias Side Information
-		self.input_proby 	= tf.placeholder(tf.float32, shape=[None, None],   name='input_prob_y')			# Probable relation match
-		self.input_proby_ind 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_prob_ind')
-		self.input_proby_len 	= tf.placeholder(tf.float32, shape=[None],   	   name='input_prob_len')		# Max number of relation matched
+		self.input_proby_ind 	= tf.placeholder(tf.int32,   shape=[None, None],   name='input_prob_ind')		# Relation Alias information Indices
+		self.input_proby_len 	= tf.placeholder(tf.float32, shape=[None],   	   name='input_prob_len')		# Max number of relations per bag for the entire batch
 
 		self.x_len		= tf.placeholder(tf.int32,   shape=[None],         name='input_len')			# Number of words in sentences in a batch
 		self.sent_num 		= tf.placeholder(tf.int32,   shape=[None, 3], 	   name='sent_num')			# Stores which sentences belong to which bag
@@ -28,8 +28,8 @@ class RESIDE(Base):
 		self.total_bags 	= tf.placeholder(tf.int32,   shape=(), 		   name='total_bags')			# Total number of bags in a batch
 		self.total_sents 	= tf.placeholder(tf.int32,   shape=(), 		   name='total_sents')			# Total number of sentences in a batch
 
-		self.de_adj_ind 	= tf.placeholder(tf.int64,   shape=[self.num_deLabel, None, None, 2], name='de_adj_ind')# Dependency graph information (Storing only indices and data)
-		self.de_adj_data 	= tf.placeholder(tf.float32, shape=[self.num_deLabel, None, None], name='de_adj_data')
+		self.de_adj_ind 	= tf.placeholder(tf.int64,   shape=[self.num_deLabel, None, None,2], name='de_adj_ind') # Dependency graph indices
+		self.de_adj_data 	= tf.placeholder(tf.float32, shape=[self.num_deLabel, None, None],  name='de_adj_data')	# Dependency graph data
 
 		self.dropout 		= tf.placeholder_with_default(self.p.dropout, 	  shape=(), name='dropout')		# Dropout used in GCN Layer
 		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')		# Dropout used in Bi-LSTM
@@ -67,26 +67,21 @@ class RESIDE(Base):
 		return x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len
 
 
-	def create_feed_dict(self, batch, wLabels=True, dtype='train'):									# Where putting dropout for train?
-		if not self.p.no_eval:
-			X, Y, pos1, pos2, sent_num, sub_type, obj_type, sub_prob, obj_prob, rel_alias = batch['X'], batch['Y'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['sub_prob'], batch['obj_prob'], batch['ProbY']
-		else:
-			X, pos1, pos2, sent_num, sub_type, obj_type, sub_prob, obj_prob, rel_alias = batch['X'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['sub_prob'], batch['obj_prob'], batch['ProbY']
+	def create_feed_dict(self, batch, wLabels=False, split='test'):									# Where putting dropout for train?
+		X, pos1, pos2, sent_num, sub_type, obj_type, rel_alias = batch['X'], batch['Pos1'], batch['Pos2'], batch['sent_num'], batch['SubType'], batch['ObjType'], batch['ProbY']
 		
 		total_sents = len(batch['X'])
 		total_bags  = len(batch['Y'])
 		x_pad, x_len, pos1_pad, pos2_pad, seq_len, subtype, subtype_len, objtype, objtype_len, rel_alias_ind, rel_alias_len = self.pad_dynamic(X, pos1, pos2, sub_type, obj_type, rel_alias)
 
-		if not self.p.no_eval: y_hot = self.getOneHot(Y, 		self.num_class)
 		proby = self.getOneHot(rel_alias, 	self.num_class-1, isprob=True)	# -1 because NA cannot be in proby
 
 		feed_dict = {}
 		feed_dict[self.input_x] 		= np.array(x_pad)
 		feed_dict[self.input_pos1]		= np.array(pos1_pad)
 		feed_dict[self.input_pos2]		= np.array(pos2_pad)
-		feed_dict[self.input_subtype]	= np.array(subtype)
-		feed_dict[self.input_objtype]	= np.array(objtype)
-		feed_dict[self.input_proby]		= np.array(proby)
+		feed_dict[self.input_subtype]		= np.array(subtype)
+		feed_dict[self.input_objtype]		= np.array(objtype)
 		feed_dict[self.x_len] 			= np.array(x_len)
 		feed_dict[self.seq_len]			= seq_len
 		feed_dict[self.total_sents]		= total_sents
@@ -96,16 +91,11 @@ class RESIDE(Base):
 		feed_dict[self.input_objtype_len] 	= np.array(objtype_len) + self.p.eps
 		feed_dict[self.input_proby_ind] 	= np.array(rel_alias_ind)
 		feed_dict[self.input_proby_len] 	= np.array(rel_alias_len) + self.p.eps
-		feed_dict[self.input_sub_prob]		= np.array(sub_prob)
-		feed_dict[self.input_obj_prob]		= np.array(obj_prob)
-
-		if not self.p.no_eval:
-			if wLabels: feed_dict[self.input_y] 	= y_hot
 
 		feed_dict[self.de_adj_ind], \
 		feed_dict[self.de_adj_data] 		= self.get_adj(batch['DepEdges'], total_sents, seq_len, self.num_deLabel)
 
-		if dtype != 'train':
+		if split != 'train':
 			feed_dict[self.dropout]     = 1.0
 			feed_dict[self.rec_dropout] = 1.0
 		else:
@@ -132,18 +122,29 @@ class RESIDE(Base):
 
 		return adj_mat_ind, adj_mat_data
 
-	# GCN Layer Implementation 
-	def GCNLayer(self, 	gcn_in, 	# Input to GCN Layer
-				in_dim, 	# Dimension of input to GCN Layer 
-				gcn_dim, 	# Hidden state dimension of GCN
-				batch_size, 	# Batch size
-				max_nodes, 	# Maximum number of nodes in graph
-				max_labels, 	# Maximum number of edge labels
-				adj_ind, 	# Adjacency matrix indices
-				adj_data, 	# Adjacency matrix data (all 1's)
-				w_gating=True,  # Whether to include gating in GCN
-				num_layers=1, 	# Number of GCN Layers
-				name="GCN"):
+	def GCNLayer(self, gcn_in, in_dim, gcn_dim, batch_size, max_nodes, max_labels, adj_ind, adj_data, w_gating=True, num_layers=1, name="GCN"):
+		"""
+		GCN Layer Implementation
+
+		Parameters
+		----------
+		gcn_in:		Input to GCN Layer
+		in_dim:		Dimension of input to GCN Layer 
+		gcn_dim:	Hidden state dimension of GCN
+		batch_size:	Batch size
+		max_nodes:	Maximum number of nodes in graph
+		max_labels:	Maximum number of edge labels
+		adj_ind:	Adjacency matrix indices
+		adj_data:	Adjacency matrix data (all 1's)
+		w_gating:	Whether to include gating in GCN
+		num_layers:	Number of GCN Layers
+		name 		Name of the layer (used for creating variables, keep it different for different layers)
+
+		Returns
+		-------
+		out		List of output of different GCN layers with first element as input itself, i.e., [gcn_in, gcn_layer1_out, gcn_layer2_out ...]
+		"""
+
 		out = []
 		out.append(gcn_in)
 
@@ -156,7 +157,7 @@ class RESIDE(Base):
 				for lbl in range(max_labels):
 
 					# Defining the layer and label specific parameters
-					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer), reuse=tf.AUTO_REUSE) as scope:
+					with tf.variable_scope('label-%d_name-%s_layer-%d' % (lbl, name, layer)) as scope:
 						w_in   = tf.get_variable('w_in',  	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						w_out  = tf.get_variable('w_out', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
 						w_loop = tf.get_variable('w_loop', 	[in_dim, gcn_dim], initializer=tf.contrib.layers.xavier_initializer(), 	regularizer=self.regularizer)
@@ -238,10 +239,23 @@ class RESIDE(Base):
 		return out
 
 	def add_model(self):
+		"""
+		Creates the Computational Graph
+
+		Parameters
+		----------
+
+		Returns
+		-------
+		nn_out:		Logits for each bag in the batch
+		accuracy:	accuracy for the entire batch
+		"""
+
 		in_wrds, in_pos1, in_pos2 = self.input_x, self.input_pos1, self.input_pos2
 
-		with tf.variable_scope('Embeddings', reuse=tf.AUTO_REUSE) as scope:
-			embed_init 	 = getGlove(self.wrd_list, self.p.embed_init)
+		with tf.variable_scope('Embeddings') as scope:
+			model 	  	= gensim.models.KeyedVectors.load_word2vec_format(self.p.embed_loc, binary=False)
+			embed_init 	= getEmbeddings(model, self.wrd_list, self.p.embed_dim)
 			_wrd_embeddings = tf.get_variable('embeddings', initializer=embed_init, trainable=True, regularizer=self.regularizer)
 			wrd_pad  	= tf.zeros([1, self.p.embed_dim])
 			wrd_embeddings  = tf.concat([wrd_pad, _wrd_embeddings], axis=0)
@@ -249,14 +263,13 @@ class RESIDE(Base):
 			pos1_embeddings = tf.get_variable('pos1_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 			pos2_embeddings = tf.get_variable('pos2_embeddings', [self.max_pos, self.p.pos_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True,   regularizer=self.regularizer)
 
-		if self.p.RelAlias:
-			with tf.variable_scope('AliasInfo', reuse=tf.AUTO_REUSE) as scope:
-				pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
-				_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
-				alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
+		with tf.variable_scope('AliasInfo') as scope:
+			pad_alias_embed   = tf.zeros([1, self.p.alias_dim],     dtype=tf.float32, name='alias_pad')
+			_alias_embeddings = tf.get_variable('alias_embeddings', [self.num_class-1, self.p.alias_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
+			alias_embeddings  = tf.concat([pad_alias_embed, _alias_embeddings], axis=0)
 
-				alias_embed = tf.nn.embedding_lookup(alias_embeddings, self.input_proby_ind)
-				alias_av    = tf.divide(tf.reduce_sum(alias_embed, axis=1), tf.expand_dims(self.input_proby_len, axis=1))
+			alias_embed = tf.nn.embedding_lookup(alias_embeddings, self.input_proby_ind)
+			alias_av    = tf.divide(tf.reduce_sum(alias_embed, axis=1), tf.expand_dims(self.input_proby_len, axis=1))
 
 		wrd_embed  = tf.nn.embedding_lookup(wrd_embeddings,  in_wrds)
 		pos1_embed = tf.nn.embedding_lookup(pos1_embeddings, in_pos1)
@@ -264,28 +277,24 @@ class RESIDE(Base):
 		embeds     = tf.concat([wrd_embed, pos1_embed, pos2_embed], axis=2)
 
 		with tf.variable_scope('Bi-LSTM') as scope:
-			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, reuse=tf.AUTO_REUSE, name='FW_GRU'), output_keep_prob=self.rec_dropout)
-			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, reuse=tf.AUTO_REUSE, name='BW_GRU'), output_keep_prob=self.rec_dropout)
+			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='FW_GRU'), output_keep_prob=self.rec_dropout)
+			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='BW_GRU'), output_keep_prob=self.rec_dropout)
 			val, state   = tf.nn.bidirectional_dynamic_rnn(fw_cell, bk_cell, embeds, sequence_length=self.x_len, dtype=tf.float32)
 
 			lstm_out     = tf.concat((val[0], val[1]), axis=2)
 			lstm_out_dim = self.p.lstm_dim*2
 
-		if self.p.de_gcn:
-			de_out = self.GCNLayer( gcn_in 		= lstm_out, 		in_dim 	    = lstm_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
-						batch_size 	= self.total_sents, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel,
-						adj_ind 	= self.de_adj_ind, 	adj_data    = self.de_adj_data, 	w_gating   = self.p.wGate,
-						num_layers 	= self.p.de_layers, 	name 	    = "GCN_DE")
+		de_out = self.GCNLayer( gcn_in 		= lstm_out, 		in_dim 	    = lstm_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
+					batch_size 	= self.total_sents, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel,
+					adj_ind 	= self.de_adj_ind, 	adj_data    = self.de_adj_data, 	w_gating   = self.p.wGate,
+					num_layers 	= self.p.de_layers, 	name 	    = "GCN_DE")
 
 
-			de_out 	   = de_out[-1]
-			de_out 	   = tf.concat([lstm_out, de_out], axis=2)
-			de_out_dim = self.p.de_gcn_dim + lstm_out_dim
-		else:
-			de_out 		= lstm_out
-			de_out_dim	= lstm_out_dim
+		de_out 	   = de_out[-1]
+		de_out 	   = tf.concat([lstm_out, de_out], axis=2)
+		de_out_dim = self.p.de_gcn_dim + lstm_out_dim
 
-		with tf.variable_scope('Word_attention', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Word_attention') as scope:
 			wrd_query    = tf.get_variable('wrd_query', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 			sent_reps    = tf.reshape(
 						tf.matmul(
@@ -302,30 +311,23 @@ class RESIDE(Base):
 						[self.total_sents, de_out_dim]
 					)
 
-			if self.p.RelAlias:
-				sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
-				de_out_dim += self.p.alias_dim
+			sent_reps  = tf.concat([sent_reps, alias_av], axis=1)
+			de_out_dim += self.p.alias_dim
 
+		with tf.variable_scope('TypeInfo') as scope:
+			pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
+			_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
+			type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
 
-		if self.p.Type:
-			with tf.variable_scope('TypeInfo', reuse=tf.AUTO_REUSE) as scope:
-				pad_type_embed   = tf.zeros([1, self.p.type_dim],     dtype=tf.float32, name='type_pad')
-				_type_embeddings = tf.get_variable('type_embeddings', [self.type_num, self.p.type_dim], initializer=tf.contrib.layers.xavier_initializer(), trainable=True, regularizer=self.regularizer)
-				type_embeddings  = tf.concat([pad_type_embed, _type_embeddings], axis=0)
+			subtype = tf.nn.embedding_lookup(type_embeddings,  self.input_subtype)
+			objtype = tf.nn.embedding_lookup(type_embeddings,  self.input_objtype)
 
-				subtype = tf.nn.embedding_lookup(type_embeddings,  self.input_subtype)
-				objtype = tf.nn.embedding_lookup(type_embeddings,  self.input_objtype)
+			subtype_av = tf.divide(tf.reduce_sum(subtype, axis=1), tf.expand_dims(self.input_subtype_len, axis=1))
+			objtype_av = tf.divide(tf.reduce_sum(objtype, axis=1), tf.expand_dims(self.input_objtype_len, axis=1))
 
-				# subtype_av = tf.divide(tf.reduce_sum(subtype, axis=1), tf.expand_dims(self.input_subtype_len, axis=1)) * self.input_sub_prob
-				# objtype_av = tf.divide(tf.reduce_sum(objtype, axis=1), tf.expand_dims(self.input_objtype_len, axis=1)) * self.input_obj_prob
+			type_info = tf.concat([subtype_av, objtype_av], axis=1)
 
-				subtype_av = tf.matmul(self.input_sub_prob, type_embeddings)
-				objtype_av = tf.matmul(self.input_obj_prob, type_embeddings)
-
-				type_info = tf.concat([subtype_av, objtype_av], axis=1)
-
-			
-		with tf.variable_scope('Sentence_attention', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('Sentence_attention') as scope:
 			sent_atten_q = tf.get_variable('sent_atten_q', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
 
 			def getSentAtten(num):
@@ -344,11 +346,10 @@ class RESIDE(Base):
 
 			bag_rep = tf.map_fn(getSentAtten, self.sent_num, dtype=tf.float32)
 
-		if self.p.Type:
-			bag_rep    = tf.concat([bag_rep, type_info], axis=1)
-			de_out_dim = de_out_dim + self.p.type_dim * 2
+		bag_rep    = tf.concat([bag_rep, type_info], axis=1)
+		de_out_dim = de_out_dim + self.p.type_dim * 2
 
-		with tf.variable_scope('FC1', reuse=tf.AUTO_REUSE) as scope:
+		with tf.variable_scope('FC1') as scope:
 			w_rel   = tf.get_variable('w_rel', [de_out_dim, self.num_class], initializer=tf.contrib.layers.xavier_initializer(), 		regularizer=self.regularizer)
 			b_rel   = tf.get_variable('b_rel', 				 initializer=np.zeros([self.num_class]).astype(np.float32), 	regularizer=self.regularizer)
 			nn_out = tf.nn.xw_plus_b(bag_rep, w_rel, b_rel)
@@ -359,8 +360,9 @@ class RESIDE(Base):
 			y_actual = tf.argmax(self.input_y, axis=1)
 			accuracy = tf.reduce_mean(tf.cast(tf.equal(y_pred, y_actual), tf.float32))
 
-		''' Debugging command :
-		res = debug_nn([subtype_av, objtype_av, type_info], self.create_feed_dict( next(self.getBatches()) ) ); pdb.set_trace()
+		''' Debugging command:
+			Put the below command anywhere and get the values of the tensors
+			res  = debug_nn([de_out], self.create_feed_dict( next(self.getBatches(self.data['train'])) ) ); pdb.set_trace()
 		'''
 		return nn_out, accuracy
 
@@ -369,51 +371,39 @@ if __name__== "__main__":
 
 	parser = argparse.ArgumentParser(description='Main Neural Network for Time Stamping Documents')
 
-	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',								help='GPU to use')
-	parser.add_argument('-embed', 	 dest="embed_init", 	default='wiki_50',	 						help='Embedding for initialization')
-	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=10, 			type=int, 				help='Dimension of positional embeddings')
-	parser.add_argument('-lstm',  	 dest="lstm", 		default='concat',	 						help='Bi-LSTM add/concat')
-	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=128,   	type=int, 						help='Hidden state dimension of Bi-LSTM')
-
-	parser.add_argument('-type_dim', dest="type_dim", 	default=50,   			type=int, 			help='Type dimension')
-	parser.add_argument('-alias_dim',dest="alias_dim", 	default=32,   			type=int, 			help='Alias dimension')
-	parser.add_argument('-de_dim',   dest="de_gcn_dim", 	default=16,   			type=int, 			help='Hidden state dimension of GCN over dependency tree')
-	parser.add_argument('-de_layer', dest="de_layers", 	default=1,   			type=int, 			help='Number of layers in GCN over dependency tree')
-	parser.add_argument('-drop',	 dest="dropout", 	default=0.8,  			type=float,			help='Dropout for full connected layer')
-	parser.add_argument('-rdrop',	 dest="rec_dropout", 	default=0.8,  			type=float,			help='Recurrent dropout for LSTM')
-
-	parser.add_argument('-onlyTest', dest="onlyTest", 	action='store_true',   							help='Calculate P@')
-	parser.add_argument('-no_eval', dest="no_eval", 	action='store_true',   							help='Do not evaluate on the test set')
-	parser.add_argument('-lr',	 dest="lr", 		default=0.001,  		type=float,				help='Learning rate')
-	parser.add_argument('-l2', 	 dest="l2", 		default=0.001,  		type=float, 				help='L2 regularization')
-	parser.add_argument('-epoch', 	 dest="max_epochs", 	default=10,   			type=int, 				help='Max epochs')
-	parser.add_argument('-batch', 	 dest="batch_size", 	default=32,   			type=int, 				help='Batch size')
-	parser.add_argument('-chunk', 	 dest="chunk_size", 	default=1000,   		type=int, 				help='Chunk size')
-	parser.add_argument('-restore',	 dest="restore", 	action='store_true', 							help='Restore from the previous best saved model')
-	parser.add_argument('-ntype',	 dest="Type", 		action='store_false', 							help='Restore from the previous best saved model')
-	parser.add_argument('-nRelAlias',dest="RelAlias", 	action='store_false', 							help='Restore from the previous best saved model')
-	parser.add_argument('-n_de_gcn', dest="de_gcn", 	action='store_false', 							help='Restore from the previous best saved model')
-	parser.add_argument('-opt',	 dest="opt", 		default='adam', 							help='Optimizer to use for training')
-	parser.add_argument('-ngram', 	 dest="ngram", 		default=3, 			type=int, 				help='Window size')
-	parser.add_argument('-n_filters',dest="num_filters", 	default=230, 			type=int, 				help='Filter size of RESIDE')
-	parser.add_argument('-max_pos',  dest="max_pos", 	default=60, 			type=int, 				help='Max length of pos')
-	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Decide to include gates in GCN')
-
-	parser.add_argument('-eps', 	 dest="eps", 		default=0.00000001,  		type=float, 			help='Value of epsilon')
-	parser.add_argument('-name', 	 dest="name", 		default='test_'+str(uuid.uuid4()),					help='Name of the run')
-	parser.add_argument('-logdb', 	 dest="log_db", 	default='main_run',	 						help='MongoDB database for dumping results')
-	parser.add_argument('-seed', 	 dest="seed", 		default=1234, 			type=int,				help='Seed for randomization')
-	parser.add_argument('-logdir',	 dest="log_dir", 	default='/scratchd/home/shikhar/entity_linker/src/cesi/log/', 		help='Log directory')
-	parser.add_argument('-config',	 dest="config_dir", 	default='/scratchd/home/shikhar/entity_linker/src/config/', 		help='Config directory')
-	parser.add_argument('-rel2alias_file', 	default='../data/extended_m_inell_relations.json', 					help='File containing relation to alias mapping')
-	parser.add_argument('-type2id_file',   	default='../data/type2id.json', 							help='File containing type to id mapping')
-	parser.add_argument('-merge_rel',  	default='/scratchd/home/shikhar/entity_linker/data/riedel_data/merge_decisions.json',	help='File containing remapping of relations')
-	parser.add_argument('-index',  		default='inell_bags_v3',								help='ES Index name')
-	parser.add_argument('-redis',	 dest="redis", 	action='store_true', 							help='Restore from the previous best saved model')
+	parser.add_argument('-data', 	 	dest="dataset", 	default='riedel',				help='Dataset to use')
+	parser.add_argument('-gpu', 	 	dest="gpu", 		default='0',					help='GPU to use')
+	parser.add_argument('-nGate', 	 	dest="wGate", 		action='store_false',   			help='Include edgewise-gating in GCN')
+	parser.add_argument('-lstm_dim', 	dest="lstm_dim", 	default=192,   		type=int, 		help='Hidden state dimension of Bi-LSTM')
+	parser.add_argument('-pos_dim',  	dest="pos_dim", 	default=16, 		type=int, 		help='Dimension of positional embeddings')
+	parser.add_argument('-type_dim', 	dest="type_dim", 	default=50,   		type=int, 		help='Type dimension')
+	parser.add_argument('-alias_dim',	dest="alias_dim", 	default=32,   		type=int, 		help='Alias dimension')
+	parser.add_argument('-de_dim',   	dest="de_gcn_dim", 	default=16,   		type=int, 		help='Hidden state dimension of GCN over dependency tree')
+	parser.add_argument('-max_pos',  	dest="max_pos", 	default=60,   		type=int, 		help='Maximum position difference to consider')
+	parser.add_argument('-de_layer', 	dest="de_layers", 	default=1,   		type=int, 		help='Number of layers in GCN over dependency tree')
+	parser.add_argument('-drop',	 	dest="dropout", 	default=0.8,  		type=float,		help='Dropout for full connected layer')
+	parser.add_argument('-rdrop',	 	dest="rec_dropout", 	default=0.8,  		type=float,		help='Recurrent dropout for LSTM')
+	parser.add_argument('-lr',	 	dest="lr", 		default=0.001,  	type=float,		help='Learning rate')
+	parser.add_argument('-l2', 	 	dest="l2", 		default=0.001,  	type=float, 		help='L2 regularization')
+	parser.add_argument('-epoch', 	 	dest="max_epochs", 	default=2,   		type=int, 		help='Max epochs')
+	parser.add_argument('-batch', 	 	dest="batch_size", 	default=32,   		type=int, 		help='Batch size')
+	parser.add_argument('-chunk', 	 	dest="chunk_size", 	default=1000,   	type=int, 		help='Chunk size')
+	parser.add_argument('-restore',	 	dest="restore", 	action='store_true', 				help='Restore from the previous best saved model')
+	parser.add_argument('-only_eval',	dest="only_eval", 	action='store_true', 				help='Only Evaluate the pretrained model (skip training)')
+	parser.add_argument('-opt',	 	dest="opt", 		default='sgd', 				help='Optimizer to use for training')
+	parser.add_argument('-eps', 	 	dest="eps", 		default=0.00000001,  	type=float, 		help='Value of epsilon')
+	parser.add_argument('-name', 	 	dest="name", 		default='pretrained_riedel',		help='Name of the run')
+	parser.add_argument('-seed', 	 	dest="seed", 		default=1234, 		type=int,		help='Seed for randomization')
+	parser.add_argument('-logdir',	 	dest="log_dir", 	default='./log/', 				help='Log directory')
+	parser.add_argument('-config',	 	dest="config_dir", 	default='./config/', 				help='Config directory')
+	parser.add_argument('-embed_loc',	dest="embed_loc", 	default='./glove/glove.6B.50d_word2vec.txt', 	help='Log directory')
+	parser.add_argument('-embed_dim',	dest="embed_dim", 	default=50, type=int,				help='Dimension of embedding')
+	parser.add_argument('-rel2alias_file', 	default='./side_info/relation_alias/riedel/relation_alias_from_wikidata_ppdb_extended.json', 	help='File containing relation alias information')
+	parser.add_argument('-type2id_file',   	default='./side_info/entity_type/riedel/type_info.json', 					help='File containing entity type information')
 	args = parser.parse_args()
 
-	args.embed_dim = int(args.embed_init.split('_')[1])
-	if not args.restore and not args.onlyTest: args.name = args.name + '_' + time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")
+	# if not args.restore and not args.only_eval: 
+	# args.name = args.name + '_' + time.strftime("%d_%m_%Y") + '_' + time.strftime("%H:%M:%S")
 
 	tf.set_random_seed(args.seed)
 	random.seed(args.seed)
@@ -426,28 +416,18 @@ if __name__== "__main__":
 	config.gpu_options.allow_growth=True
 	with tf.Session(config=config) as sess:
 		sess.run(tf.global_variables_initializer())
-		if not args.onlyTest:
-			model.fit(sess)
-		else:
-			saver     = tf.train.Saver()
-			logger = model.logger
 
-			save_dir  = os.path.join('checkpoints/', args.name)
-			if not os.path.exists(save_dir):
-				logger.info('Path {} doesnt exist.'.format(save_dir))
-				sys.exit()
-			save_path = os.path.join(save_dir, 'best_validation')
+		# Restore previously saved model
+		saver		= tf.train.Saver()
+		save_dir	= os.path.join('checkpoints/', args.name)
+		if not os.path.exists(save_dir):
+			model.logger.info('Path {} doesnt exist.'.format(save_dir))
+			sys.exit()
+		save_path = os.path.join(save_dir, 'best_model')
+		saver.restore(sess, save_path)
 
-			saver.restore(sess, save_path) # Restore model
-
-			if not args.no_eval:
-				test_loss, test_pred, test_acc, y, y_pred, logit_list, y_hot, wrd_attens, e_pair = model.predict(sess, None, split = "test")
-				test_prec, test_rec, test_f1 = model.calc_prec_recall_f1(y, y_pred, 0)
-				y_true   = np.array([e[1:] for e in y_hot]).  	 reshape((-1))
-				y_scores = np.array([e[1:] for e in logit_list]).reshape((-1))
-				area_pr  = average_precision_score(y_true, y_scores)
-				logger.info('Main result (test): Prec:{} | Rec:{} | F1:{} | Area:{}'.format(test_prec, test_rec, test_f1, area_pr))
-				pickle.dump({'logit_list': logit_list, 'y_hot': y_hot, 'e_pair':e_pair}, open("results/{}/onlyTest_precision_recall.pkl".format(args.name), 'wb'))	# Store predictions
-			else:
-				test_pred, y_pred, logit_list, wrd_attens, e_pair = model.predict(sess, None, split = "test", no_eval = True)
-				pickle.dump({'logit_list': logit_list, 'e_pair':e_pair}, open("results/{}/onlyTest_precision_recall.pkl".format(args.name), 'wb'))	# Store predictions
+		for bag in open('./data/riedel_test_bags.json').readlines():
+			bag	= json.loads(bag)
+			batch	= model.read_data(bag)
+			feed 	= model.create_feed_dict(batch)
+			logits = sess.run(model.logits, feed_dict=feed)

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html >
+<head>
+	<meta charset="UTF-8">
+	<title>Entice Results</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+	<script src="{{ url_for('static', filename='jquery-3.2.1.min.js') }}"> </script>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/results_css.css') }}">
+
+</head>
+
+<body>
+	<main>
+		<h1>Time Distribution</h1>
+		<section>
+			<div class="pieID pie">
+			</div>
+			<ul class="pieID legend">
+				{% for key, value in time_info %}
+					<li>
+						<em>{{ key }}</em>
+						<span>{{ value }}</span>
+					</li>
+				{% endfor %}
+			</ul>
+		</section>
+	</main>
+
+	<div class="wrapper">
+	
+	<div id="buttons">
+	  <a href="/entice/entCluster/" class="btn blue">Entity Clustering</a>
+	  <a href="/entice/relCluster/" class="btn red">Relation Clustering</a>
+	  <a href="/entice/rawTriples/" class="btn purple">Raw Triples</a>
+	  <a href="/entice/vizEnt/" class="btn orange">Viz Entity Embed</a>
+	  <a href="/entice/vizRel/" class="btn yellow">Viz Relation Embed</a>
+	</div>
+
+	<div class="table">
+		<div class="row header green">
+			<div class="cell sortBtn" onclick="sortTriples('subject')"> Subject </div>
+			<div class="cell sortBtn" onclick="sortTriples('relation')"> Relation </div>
+			<div class="cell sortBtn" onclick="sortTriples('object')"> Object </div>
+			<div class="cell sortBtn" onclick="sortTriples('sentence')"> Sentence </div>
+			<div class="cell sortBtn" onclick="sortTriples('source')"> Source </div>
+			<div class="cell sortBtn" onclick="sortTriples('score')"> Score </div>
+		</div>
+
+		{% for value in inp.final_facts %}
+			<div id="data" class="row">
+				{% if value[1] in inp.title2wiki %}
+					<div class="cell subject"> <a href="http://www.wikipedia.org/wiki/{{ inp.title2wiki[value[1]] }}">{{ value[1] }}</a>   </div>
+				{% else %}
+					<div class="cell subject"> {{ value[1] }}   </div>
+				{% endif %}
+
+				{% if value[3] in inp.title2wiki %}
+					<div class="cell relation"> <a href="http://www.wikipedia.org/wiki/{{ inp.title2wiki[value[3]] }}">{{ value[3] }}</a>   </div>
+				{% else %}
+					<div class="cell relation"> {{ value[3] }}   </div>
+				{% endif %}
+
+				{% if value[5] in inp.title2wiki %}
+					<div class="cell object"> <a href="http://www.wikipedia.org/wiki/{{ inp.title2wiki[value[5]] }}">{{ value[5] }}</a>   </div>
+				{% else %}
+					<div class="cell object"> {{ value[5] }}   </div>
+				{% endif %}
+
+				<div class="cell sentence"> {{ value[7] }} </div>
+				<div class="cell source"> <div class="hideExtra"> <a href="{{ value[6] }}">{{ value[6] }}</a> </div> </div>
+				<div class="score"> {{ value[8] }} </div>
+			</div>
+			<div id="data_supp" class="row_supp">
+				<div class="cell"> <i> {{ value[0] }} </i> </div>
+				<div class="cell"> <i> {{ value[2] }} </i> </div>
+				<div class="cell"> <i> {{ value[4] }} </i> <br> <br></div>
+				<div class="cell">   </div>
+				<div class="cell">   </div>
+				<div class="cell">   </div>
+			</div>
+		{% endfor %}
+
+	</div>
+
+	<script src="{{ url_for('static', filename='js/result.js') }}"></script>
+
+</body>
+</html>

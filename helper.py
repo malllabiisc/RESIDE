@@ -1,6 +1,6 @@
 import numpy as np, os, sys, random,  argparse
 import pickle, uuid, time, pdb, json, gensim, itertools
-import logging, logging.config, pathlib
+import logging, logging.config, pathlib, re
 
 from collections import defaultdict as ddict
 from nltk.tokenize import word_tokenize
