@@ -1,179 +1,166 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+	<title>RESIDE Demo</title>
 	<meta charset="UTF-8">
-	<title>Entice</title>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/entice_form_css.css') }}">
-	<script src="{{ url_for('static', filename='jquery-3.2.1.min.js') }}"> </script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--===============================================================================================-->
+	<link rel="icon" type="image/png" href="images/icons/favicon.ico"/> 
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fonts/font-awesome-4.7.0/css/font-awesome.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fonts/iconic/css/material-design-iconic-font.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/animate/animate.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/css-hamburgers/hamburgers.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/animsition/css/animsition.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/select2/select2.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/daterangepicker/daterangepicker.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/noui/nouislider.min.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/util.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+<!--===============================================================================================-->
 </head>
-
 <body>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Sign Up Form</title>
-		<link href='https://fonts.googleapis.com/css?family=Nunito:400,300' rel='stylesheet' type='text/css'>
-	</head>
-	<body>
 
-		<!-- <form action = "http://{{ server_ip }}:{{ port }}/result" method = "POST"> -->
-		<form action = "/entice/result/" method = "POST">
-		
-			<h1>ENTICE</h1>
 
-			<fieldset>
-				<label for="entity_name">Entity:</label>
-				<input type="text" id="entity_name" name="entity_name">
-				
-				<label for="search_strings">Search Strings:</label>
-				<input type="text" id="search_strings" name="search_strings">
-				
-				<label for="category">Category:</label>
-				<input type="text" id="category" name="category">
-			 	
-			 	<input type="checkbox" id="cache" name="cache"><label class="light" for="cache">Clear cache</label>
-			 	
-			</fieldset>
-			<button type="submit" id="startExt">Start Extraction</button>
-		</form>
+	<div class="container-contact100">
+		<div class="wrap-contact100">
+			<form action="/entice/result/" method="POST" class="contact100-form validate-form">
+				<span class="contact100-form-title">
+					RESIDE: Neural Relation Extraction using Side Information
+				</span>
 
-		<div class="checkout-wrap">
-			<ul class="checkout-bar">
+				<div class="wrap-input100 validate-input bg1">
+					<span class="label-input100">Sentence</span>
+					<input class="input100" type="text" name="name" value="{{ bag.sents[0].sent }}">
+				</div>
 
-				<li id="1" class=""> Sentence Extraction </li>
-				
-				<li id="2" class=""> Triple Generation </li>
-				
-				<li id="3" class=""> Entity Linking </li>
-				
-				<li id="4" class=""> Learning Embeddings </li>
-				
-				<li id="5" class=""> Clustering </li>
-					 
-			</ul>
+				<div class="wrap-input100 validate-input bg1 rs1-wrap-input100">
+					<span class="label-input100">Entity 1</span>
+					<input class="input100" type="text" name="target_ent_1" value="{{ bag.sub }}">
+				</div>
+
+				<div class="wrap-input100 bg1 rs1-wrap-input100">
+					<span class="label-input100">Entity 2</span>
+					<input class="input100" type="text" name="target_ent_2" value="{{ bag.obj }}">
+				</div>
+
+				<div class="wrap-input100 validate-input bg1">
+					<span class="label-input100">Relation</span>
+					<input class="input100" type="text" name="name" value="{{ pred }}">
+				</div>
+
+				<!-- <div class="wrap-input100 input100-select bg1">
+					<span class="label-input100">Needed Services *</span>
+					<div>
+						<select class="js-select2" name="service">
+							<option>Please chooses</option>
+							<option>eCommerce Bussiness</option>
+							<option>UI/UX Design</option>
+							<option>Online Services</option>
+						</select>
+						<div class="dropDownSelect2"></div>
+					</div>
+				</div> -->
+
+				<!-- <div class="wrap-input100 validate-input bg0 rs1-alert-validate" data-validate = "Please Type Your Message">
+					<span class="label-input100">Result</span>
+					<textarea class="input100" name="result"></textarea>
+				</div> -->
+
+				<!-- <div class="container-contact100-form-btn"  action="/entice/result/" method="POST">
+					<button class="contact100-form-btn">
+						<span>
+							Submit
+							<i class="fa fa-long-arrow-right m-l-7" aria-hidden="true"></i>
+						</span>
+					</button>
+				</div> -->
+			</form>
 		</div>
+	</div>
 
-		<!-- <script src="{{ url_for('static', filename='js/entice_form.js') }}"> </script> -->
-<script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='vendor/jquery/jquery-3.2.1.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='vendor/animsition/js/animsition.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='vendor/bootstrap/js/popper.js') }}"></script>
+	<script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.min.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='vendor/select2/select2.min.js') }}"></script>
+	<script>
+		$(".js-select2").each(function(){
+			$(this).select2({
+				minimumResultsForSearch: 20,
+				dropdownParent: $(this).next('.dropDownSelect2')
+			});
 
-function setProgressLevel(val){
-	var styles = document.getElementById('progressBar');
-	styles.parentNode.removeChild(styles);
-	$( '<style id="progressBar" type="text/css"> @media all and (min-width: 800px) {.checkout-bar li.active:after {-webkit-animation: myanimation 3s 0; background-size: 35px 35px; background-color: #8bc53f; background-image: -webkit-linear-gradient(-45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent); background-image: -moz-linear-gradient(-45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent); -webkit-box-shadow: inset 2px 2px 2px 0px rgba(0, 0, 0, 0.2); box-shadow: inset 2px 2px 2px 0px rgba(0, 0, 0, 0.2); content: ""; height: 15px; left: 50%; position: absolute; top: -50px; z-index: 0; width: ' + val + ' ; } } </style>' ).appendTo( "body" )
-}
 
-var interval = null;
-
-function updateProgressBar(res){
-	res = JSON.parse(res)
-	console.log(res)
-
-	c = res.comp_elems
-	t = res.total_elems
-
-	switch(res.curr_step){
-		case 1:
-			$("#1").attr('class', 'active');
-			$("#2").attr('class', 'next');
-			$("#3").attr('class', '');
-			$("#4").attr('class', '');
-			$("#5").attr('class', '');
-			break;
-		case 2:
-			$("#1").attr('class', 'visited first');
-			$("#2").attr('class', 'active');
-			$("#3").attr('class', 'next');
-			$("#4").attr('class', '');
-			$("#5").attr('class', '');
-			break;
-		case 3:
-			$("#1").attr('class', 'visited first');
-			$("#2").attr('class', 'previous visited');
-			$("#3").attr('class', 'active');
-			$("#4").attr('class', 'next');
-			$("#5").attr('class', '');
-			break;
-		case 4:
-			$("#1").attr('class', 'visited first');
-			$("#2").attr('class', 'previous visited');
-			$("#3").attr('class', 'previous visited');
-			$("#4").attr('class', 'active');
-			$("#5").attr('class', 'next');
-			break;
-		case 5:
-			$("#1").attr('class', 'visited first');
-			$("#2").attr('class', 'previous visited');
-			$("#3").attr('class', 'previous visited');
-			$("#4").attr('class', 'previous visited');
-			$("#5").attr('class', 'active');
-			break;
-		default:
-			$("#1").attr('class', '');
-			$("#2").attr('class', '');
-			$("#3").attr('class', '');
-			$("#4").attr('class', '');
-			$("#5").attr('class', '');
-			clearInterval(interval);
-	}
-
-	perc = c / (t*1.0) * 100
-	console.log(perc.toString())
-	setProgressLevel(perc.toString() + '%');
-}
-
-function startQuerying(){
-	interval = setInterval(function(){ 
-		$.ajax({
-			crossOrigin: true,
-			url: 'http://{{ server_ip }}:{{ ajax_port }}/getProgress',
-			type: 'POST',
-			success: function(response) {
-				updateProgressBar(response)
-			},
-			error: function(error) {
-				console.log(error);
-			}
+			$(".js-select2").each(function(){
+				$(this).on('select2:close', function (e){
+					if($(this).val() == "Please chooses") {
+						$('.js-show-service').slideUp();
+					}
+					else {
+						$('.js-show-service').slideUp();
+						$('.js-show-service').slideDown();
+					}
+				});
+			});
 		})
-	}, 5000);
-}
+	</script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='vendor/daterangepicker/moment.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='vendor/daterangepicker/daterangepicker.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='vendor/countdowntime/countdowntime.js') }}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='vendor/noui/nouislider.min.js') }}"></script>
+	<script>
+	    var filterBar = document.getElementById('filter-bar');
 
-$(document).on('ready',function(){
-	startQuerying();
-});
+	    noUiSlider.create(filterBar, {
+	        start: [ 1500, 3900 ],
+	        connect: true,
+	        range: {
+	            'min': 1500,
+	            'max': 7500
+	        }
+	    });
 
-$('#startExt').click(function(){
-   	startQuerying();
-});
+	    var skipValues = [
+	    document.getElementById('value-lower'),
+	    document.getElementById('value-upper')
+	    ];
 
+	    filterBar.noUiSlider.on('update', function( values, handle ) {
+	        skipValues[handle].innerHTML = Math.round(values[handle]);
+	        $('.contact100-form-range-value input[name="from-value"]').val($('#value-lower').html());
+	        $('.contact100-form-range-value input[name="to-value"]').val($('#value-upper').html());
+	    });
+	</script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-23581568-13"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-23581568-13');
 </script>
 
-
-<style id="progressBar" type="text/css">
-
-@media all and (min-width: 800px) {
-	.checkout-bar li.active:after {
-		-webkit-animation: myanimation 3s 0;
-		background-size: 35px 35px;
-		background-color: #8bc53f;
-		background-image: -webkit-linear-gradient(-45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent);
-		background-image: -moz-linear-gradient(-45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent);
-		-webkit-box-shadow: inset 2px 2px 2px 0px rgba(0, 0, 0, 0.2);
-		box-shadow: inset 2px 2px 2px 0px rgba(0, 0, 0, 0.2);
-		content: "";
-		height: 15px;
-		left: 50%;
-		position: absolute;
-		top: -50px;
-		z-index: 0;
-		width: 0%;
-	}
-}
-
-</style>
-	</body>
-</html>
-	
-	
 </body>
 </html>

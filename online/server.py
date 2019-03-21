@@ -1,39 +1,27 @@
 import sys, os, pdb
 sys.path.insert(0, './')
 
+import tensorflow as tf 
 from flask import Flask, render_template, request
-from main import Entice
 from helper import *
-import config, operator
-from config import Stage
+from reside import RESIDE
 from flask_cors import CORS, cross_origin
 
-app 	= Flask(__name__, static_folder='static-entice')
-cors 	= CORS(app, resources={r"/api/*": {"origins": "*"}})
-model   = None
+app		= Flask(__name__, static_folder='static-entice')
+cors		= CORS(app, resources={r"/api/*": {"origins": "*"}})
+bag_list	= []
+model		= None
+
 
 @app.route('/reside/')
 def resideMain():
-	return render_template('reside_main.html')
+	bag	= random.choice(bag_list)
+	batch	= model.read_data(bag)
+	feed	= model.create_feed_dict(batch)
+	logits	= sess.run(model.logits, feed_dict=feed)
+	pred    = model.id2rel[np.argmax(logits)]
 
-@app.route('/entice/result/', methods = ['POST', 'GET'])
-def resultPage():
-	if request.method == 'POST':
-		global inp
-		result = request.form
-		config.updateProgress(Stage.IDLE, 0, 1)
-
-		entity_name	= result['entity_name']
-		search_strings 	= getTokens(result['search_strings'])
-		category 	= result['category']
-		cache = 'yes' if 'cache' in result.keys() else 'no'
-
-		print entity_name, search_strings, category, '\n'
-
-		inp 	  = Entice(entity_name, search_strings, category, cache).inp
-		time_info = sorted(config.time_info.items(), key=operator.itemgetter(1))
-
-		return render_template("result.html", inp = inp, time_info = time_info)
+	return render_template('reside_main.html', pred=pred, bag=bag)
 
 
 if __name__ == '__main__':
@@ -76,27 +64,25 @@ if __name__ == '__main__':
 	np.random.seed(args.seed)
 	set_gpu(args.gpu)
 
-	model  = RESIDE(args)
+	for bag in open('./data/riedel_test_bags.json').readlines():
+		bag	= json.loads(bag)
+		if bag['rel'] == [0]: continue
+		bag_list.append(bag)
 
+	model  = RESIDE(args)
 	config = tf.ConfigProto()
 	config.gpu_options.allow_growth=True
-	with tf.Session(config=config) as sess:
-		sess.run(tf.global_variables_initializer())
+	sess   =  tf.Session(config=config)
+	sess.run(tf.global_variables_initializer())
 
-		# Restore previously saved model
-		saver		= tf.train.Saver()
-		save_dir	= os.path.join('checkpoints/', args.name)
-		if not os.path.exists(save_dir):
-			model.logger.info('Path {} doesnt exist.'.format(save_dir))
-			sys.exit()
-		save_path = os.path.join(save_dir, 'best_model')
-		saver.restore(sess, save_path)
-
-		for bag in open('./data/riedel_test_bags.json').readlines():
-			bag	= json.loads(bag)
-			batch	= model.read_data(bag)
-			feed 	= model.create_feed_dict(batch)
-			logits = sess.run(model.logits, feed_dict=feed)
+	# Restore previously saved model
+	saver		= tf.train.Saver()
+	save_dir	= os.path.join('checkpoints/', args.name)
+	if not os.path.exists(save_dir):
+		model.logger.info('Path {} doesnt exist.'.format(save_dir))
+		sys.exit()
+	save_path = os.path.join(save_dir, 'best_model')
+	saver.restore(sess, save_path)
 
 	app.static_folder = 'static'
 	app.run(host="0.0.0.0", port = args.port, threaded = False)
