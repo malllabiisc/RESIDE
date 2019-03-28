@@ -176,7 +176,7 @@ class Base(object):
 
 		self.voc2id	   	= json.load(open('./data/{}_voc2id.json'.format(self.p.dataset)))
 		self.rel2id		= json.load(open('./data/{}_rel2id.json'.format(self.p.dataset)))
-		self.id2rel 		= {v: k for k, v in self.rel2id.item()}
+		self.id2rel 		= {v: k for k, v in self.rel2id.items()}
 		self.type2id		= json.load(open('./data/{}_type2id.json'.format(self.p.dataset)))
 		self.type_num		= len(self.type2id)
 

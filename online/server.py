@@ -4,7 +4,7 @@ sys.path.insert(0, './')
 import tensorflow as tf 
 from flask import Flask, render_template, request
 from helper import *
-from reside import RESIDE
+from online_reside import RESIDE
 from flask_cors import CORS, cross_origin
 
 app		= Flask(__name__, static_folder='static-entice')
@@ -21,7 +21,7 @@ def resideMain():
 	logits	= sess.run(model.logits, feed_dict=feed)
 	pred    = model.id2rel[np.argmax(logits)]
 
-	return render_template('reside_main.html', pred=pred, bag=bag)
+	return render_template('reside_main.html', actual = model.id2rel[bag['rel'][0]], pred=pred, bag=bag)
 
 
 if __name__ == '__main__':
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 	parser.add_argument('-gpu', 	 	dest="gpu", 		default='0',					help='GPU to use')
 	parser.add_argument('-nGate', 	 	dest="wGate", 		action='store_false',   			help='Include edgewise-gating in GCN')
 	parser.add_argument('-lstm_dim', 	dest="lstm_dim", 	default=192,   		type=int, 		help='Hidden state dimension of Bi-LSTM')
-	parser.add_argument('-port', 		dest="port", 		default=8888,   	type=int, 		help='Port of the server')
+	parser.add_argument('-port', 		dest="port", 		default=3535,   	type=int, 		help='Port of the server')
 	parser.add_argument('-pos_dim',  	dest="pos_dim", 	default=16, 		type=int, 		help='Dimension of positional embeddings')
 	parser.add_argument('-type_dim', 	dest="type_dim", 	default=50,   		type=int, 		help='Type dimension')
 	parser.add_argument('-alias_dim',	dest="alias_dim", 	default=32,   		type=int, 		help='Alias dimension')
@@ -58,6 +58,8 @@ if __name__ == '__main__':
 	parser.add_argument('-rel2alias_file', 	default='./side_info/relation_alias/riedel/relation_alias_from_wikidata_ppdb_extended.json', 	help='File containing relation alias information')
 	parser.add_argument('-type2id_file',   	default='./side_info/entity_type/riedel/type_info.json', 					help='File containing entity type information')
 	args = parser.parse_args()
+
+	print('Loading RESIDE model.')
 
 	tf.set_random_seed(args.seed)
 	random.seed(args.seed)

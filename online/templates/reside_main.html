@@ -41,7 +41,7 @@
 
 				<div class="wrap-input100 validate-input bg1">
 					<span class="label-input100">Sentence</span>
-					<input class="input100" type="text" name="name" value="{{ bag.sents[0].sent }}">
+					<textarea class="input100" name="result">{{ bag.sents[0].sent }}</textarea>
 				</div>
 
 				<div class="wrap-input100 validate-input bg1 rs1-wrap-input100">
@@ -55,7 +55,12 @@
 				</div>
 
 				<div class="wrap-input100 validate-input bg1">
-					<span class="label-input100">Relation</span>
+					<span class="label-input100">Correct Relation</span>
+					<input class="input100" type="text" name="name" value="{{ actual }}">
+				</div>
+
+				<div class="wrap-input100 validate-input bg1">
+					<span class="label-input100">Predicted Relation</span>
 					<input class="input100" type="text" name="name" value="{{ pred }}">
 				</div>
 
