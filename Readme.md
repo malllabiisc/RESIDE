@@ -95,7 +95,12 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 ### Running pretrained model on new samples:
 
 - The code for running pretrained model on a sample is included in `online` directory.
-- A flask based server is also included. Use `python online/server.py` to start the server.
+
+- A [flask](http://flask.pocoo.org/) based server is also provided. Use `python online/server.py` to start the server.
+
+  - `riedel_test_bags.json` required can be downloaded from [here](https://drive.google.com/file/d/1tIczJKU5NrZJvR-XHUEh7IrFrvbS_aHn/view?usp=sharing).
+
+  ![](./images/demo.png)
 
 ### Citation:
 Please cite the following paper if you use this code in your work.
