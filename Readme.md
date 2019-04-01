@@ -98,6 +98,8 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 - A [flask](http://flask.pocoo.org/) based server is also provided. Use `python online/server.py` to start the server.
 
+  - [riedel_test_bags.json](https://drive.google.com/open?id=1tIczJKU5NrZJvR-XHUEh7IrFrvbS_aHn) and other required [files](https://drive.google.com/open?id=17UNttRDo14O_Zgfr6y9tvY57fc0BGEjw) can be downloaded from the provided links.
+
   ![](./images/demo.png)
 
 ### Citation:
