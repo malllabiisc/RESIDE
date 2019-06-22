@@ -106,18 +106,19 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 Please cite the following paper if you use this code in your work.
 
 ```tex
-@InProceedings{reside2018,
-  author = 	"Vashishth, Shikhar
-		and Joshi, Rishabh
-		and Prayaga, Sai Suman
-		and Bhattacharyya, Chiranjib
-		and Talukdar, Partha",
+@inproceedings{reside2018,
+  author = 	"Vashishth, Shikhar and 
+  		Joshi, Rishabh and
+		Prayaga, Sai Suman and
+		Bhattacharyya, Chiranjib and
+		Talukdar, Partha",
   title = 	"{RESIDE}: Improving Distantly-Supervised Neural Relation Extraction using Side Information",
   booktitle = 	"Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing",
+  month = 	oct # "-" # nov,
+  address = 	"Brussels, Belgium",
   year = 	"2018",
   publisher = 	"Association for Computational Linguistics",
   pages = 	"1257--1266",
-  location = 	"Brussels, Belgium",
   url = 	"http://aclweb.org/anthology/D18-1157"
 }
 ```
