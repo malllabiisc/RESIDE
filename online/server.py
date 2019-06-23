@@ -60,10 +60,6 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	print('Loading RESIDE model.')
-
-	tf.set_random_seed(args.seed)
-	random.seed(args.seed)
-	np.random.seed(args.seed)
 	set_gpu(args.gpu)
 
 	for bag in open('./data/riedel_test_bags.json').readlines():
@@ -86,5 +82,6 @@ if __name__ == '__main__':
 	save_path = os.path.join(save_dir, 'best_model')
 	saver.restore(sess, save_path)
 
+	print('Started server at port: {}'.format(args.port))
 	app.static_folder = 'static'
 	app.run(host="0.0.0.0", port = args.port, threaded = False)

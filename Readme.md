@@ -2,7 +2,7 @@
 
 Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information](http://aclweb.org/anthology/D18-1157).
 
-**Resources:** [Paper](http://aclweb.org/anthology/D18-1157) | [Slides](https://docs.google.com/presentation/d/1Oyo59qDjQi7SsyLp3GCWkFbq7Px7TPrXa-KiSqwq6e0/edit#slide=id.gc6f73a04f_0_0) | [Poster](https://shikhar-vashishth.github.io/assets/pdf/reside_poster.pdf) | [Video](https://vimeo.com/305199302)
+**Resources:** [Paper](http://aclweb.org/anthology/D18-1157) | [Supplementary](https://shikhar-vashishth.github.io/assets/pdf/reside_supp.pdf) | [Slides](https://docs.google.com/presentation/d/1Oyo59qDjQi7SsyLp3GCWkFbq7Px7TPrXa-KiSqwq6e0/edit#slide=id.gc6f73a04f_0_0) | [Poster](https://shikhar-vashishth.github.io/assets/pdf/reside_poster.pdf) | [Video](https://vimeo.com/305199302)
 ![](https://github.com/malllabiisc/RESIDE/blob/master/images/overview.png)*Overview of RESIDE (proposed method): RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention.*
 *Then, sentence embedding is concatenated with relation alias information, which comes from the Side Information Acquisition Section, before computing attention over sentences. Finally, bag representation with entity type information is fed to a softmax classifier. Please refer to paper for more details.* 
 
@@ -98,7 +98,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 - A [flask](http://flask.pocoo.org/) based server is also provided. Use `python online/server.py` to start the server.
 
-  - `riedel_test_bags.json` required can be downloaded from [here](https://drive.google.com/file/d/1tIczJKU5NrZJvR-XHUEh7IrFrvbS_aHn/view?usp=sharing).
+  - [riedel_test_bags.json](https://drive.google.com/open?id=1tIczJKU5NrZJvR-XHUEh7IrFrvbS_aHn) and other required [files](https://drive.google.com/open?id=17UNttRDo14O_Zgfr6y9tvY57fc0BGEjw) can be downloaded from the provided links.
 
   ![](./images/demo.png)
 
@@ -106,18 +106,19 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 Please cite the following paper if you use this code in your work.
 
 ```tex
-@InProceedings{reside2018,
-  author = 	"Vashishth, Shikhar
-		and Joshi, Rishabh
-		and Prayaga, Sai Suman
-		and Bhattacharyya, Chiranjib
-		and Talukdar, Partha",
+@inproceedings{reside2018,
+  author = 	"Vashishth, Shikhar and 
+  		Joshi, Rishabh and
+		Prayaga, Sai Suman and
+		Bhattacharyya, Chiranjib and
+		Talukdar, Partha",
   title = 	"{RESIDE}: Improving Distantly-Supervised Neural Relation Extraction using Side Information",
   booktitle = 	"Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing",
+  month = 	oct # "-" # nov,
+  address = 	"Brussels, Belgium",
   year = 	"2018",
   publisher = 	"Association for Computational Linguistics",
   pages = 	"1257--1266",
-  location = 	"Brussels, Belgium",
   url = 	"http://aclweb.org/anthology/D18-1157"
 }
 ```

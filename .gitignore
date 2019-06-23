@@ -5,7 +5,7 @@
 /checkpoints/*
 /glove/*
 /results/*
-
+/demo/*
 *.pyc
 *.swp
 *.egg
