@@ -209,7 +209,7 @@ class RESIDE(object):
 		self.de_adj_data 	= tf.placeholder(tf.float32, shape=[self.num_deLabel, None, None],  name='de_adj_data')	# Dependency graph data
 
 		self.dropout 		= tf.placeholder_with_default(self.p.dropout, 	  shape=(), name='dropout')		# Dropout used in GCN Layer
-		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')		# Dropout used in Bi-GRU
+		self.rec_dropout 	= tf.placeholder_with_default(self.p.rec_dropout, shape=(), name='rec_dropout')		# Dropout used in Bi-LSTM
 
 	def padData(self, data, seq_len):
 		"""
@@ -550,23 +550,23 @@ class RESIDE(object):
 		pos2_embed = tf.nn.embedding_lookup(pos2_embeddings, in_pos2)
 		embeds     = tf.concat([wrd_embed, pos1_embed, pos2_embed], axis=2)
 
-		with tf.variable_scope('Bi-GRU') as scope:
-			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.gru_dim, name='FW_GRU'), output_keep_prob=self.rec_dropout)
-			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.gru_dim, name='BW_GRU'), output_keep_prob=self.rec_dropout)
+		with tf.variable_scope('Bi-LSTM') as scope:
+			fw_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='FW_GRU'), output_keep_prob=self.rec_dropout)
+			bk_cell      = tf.contrib.rnn.DropoutWrapper(tf.nn.rnn_cell.GRUCell(self.p.lstm_dim, name='BW_GRU'), output_keep_prob=self.rec_dropout)
 			val, state   = tf.nn.bidirectional_dynamic_rnn(fw_cell, bk_cell, embeds, sequence_length=self.x_len, dtype=tf.float32)
 
-			gru_out     = tf.concat((val[0], val[1]), axis=2)
-			gru_out_dim = self.p.gru_dim*2
+			lstm_out     = tf.concat((val[0], val[1]), axis=2)
+			lstm_out_dim = self.p.lstm_dim*2
 
-		de_out = self.GCNLayer( gcn_in 		= gru_out, 		in_dim 	    = gru_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
+		de_out = self.GCNLayer( gcn_in 		= lstm_out, 		in_dim 	    = lstm_out_dim, 		gcn_dim    = self.p.de_gcn_dim,
 					batch_size 	= self.total_sents, 	max_nodes   = self.seq_len, 		max_labels = self.num_deLabel,
 					adj_ind 	= self.de_adj_ind, 	adj_data    = self.de_adj_data, 	w_gating   = self.p.wGate,
 					num_layers 	= self.p.de_layers, 	name 	    = "GCN_DE")
 
 
 		de_out 	   = de_out[-1]
-		de_out 	   = tf.concat([gru_out, de_out], axis=2)
-		de_out_dim = self.p.de_gcn_dim + gru_out_dim
+		de_out 	   = tf.concat([lstm_out, de_out], axis=2)
+		de_out_dim = self.p.de_gcn_dim + lstm_out_dim
 
 		with tf.variable_scope('Word_attention') as scope:
 			wrd_query    = tf.get_variable('wrd_query', [de_out_dim, 1], initializer=tf.contrib.layers.xavier_initializer())
@@ -946,7 +946,7 @@ if __name__== "__main__":
 	parser.add_argument('-gpu', 	 dest="gpu", 		default='0',							help='GPU to use')
 	parser.add_argument('-nGate', 	 dest="wGate", 		action='store_false',   					help='Include edgewise-gating in GCN')
 
-	parser.add_argument('-gru_dim', dest="gru_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-GRU')
+	parser.add_argument('-lstm_dim', dest="lstm_dim", 	default=192,   	type=int, 					help='Hidden state dimension of Bi-LSTM')
 	parser.add_argument('-pos_dim',  dest="pos_dim", 	default=16, 			type=int, 			help='Dimension of positional embeddings')
 	parser.add_argument('-type_dim', dest="type_dim", 	default=50,   			type=int, 			help='Type dimension')
 	parser.add_argument('-alias_dim',dest="alias_dim", 	default=32,   			type=int, 			help='Alias dimension')
@@ -954,7 +954,7 @@ if __name__== "__main__":
 
 	parser.add_argument('-de_layer', dest="de_layers", 	default=1,   			type=int, 			help='Number of layers in GCN over dependency tree')
 	parser.add_argument('-drop',	 dest="dropout", 	default=0.8,  			type=float,			help='Dropout for full connected layer')
-	parser.add_argument('-rdrop',	 dest="rec_dropout", 	default=0.8,  			type=float,			help='Recurrent dropout for GRU')
+	parser.add_argument('-rdrop',	 dest="rec_dropout", 	default=0.8,  			type=float,			help='Recurrent dropout for LSTM')
 
 	parser.add_argument('-lr',	 dest="lr", 		default=0.001,  		type=float,			help='Learning rate')
 	parser.add_argument('-l2', 	 dest="l2", 		default=0.001,  		type=float, 			help='L2 regularization')
