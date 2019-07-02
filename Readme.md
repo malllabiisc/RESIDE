@@ -88,6 +88,30 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 * Finally, run `python plot_pr.py -name new_run` to get the plot.
 
+### Baselines:
+
+* The repository also includes code for [PCNN](http://www.emnlp2015.org/proceedings/EMNLP/pdf/EMNLP203.pdf), [PCNN+ATT](https://www.aclweb.org/anthology/P16-1200), [CNN](https://www.aclweb.org/anthology/C14-1220), CNN+ATT, [BGWA](https://arxiv.org/pdf/1804.06987.pdf) models.
+
+* For training **PCNN+ATT**:
+
+  ```shell
+  python pcnnatt.py -data data/riedel_processed.pkl -name new_run -attn # remove -attn for PCNN
+  ```
+
+  
+
+* Similarly for training **CNN+ATT**:
+
+  ```shell
+  python cnnatt.py -data data/riedel_processed.pkl -name new_run # remove -attn for CNN
+  ```
+
+* For training **BGWA**:
+
+  ```shell
+  python bgwa.py -data data/riedel_processed.pkl -name new_run
+  ```
+
 ### Preprocessing a new dataset:
 
 * `preproc` directory contains code for getting a new dataset in the required format (`riedel_processed.pkl`) for `reside.py`.

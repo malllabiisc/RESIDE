@@ -1,5 +1,5 @@
 import numpy as np, os, sys, random,  argparse
-import pickle, uuid, time, pdb, json, gensim, itertools
+import pickle, uuid, time, pdb, json, itertools
 import logging, logging.config, pathlib, re
 
 from collections import defaultdict as ddict
@@ -10,7 +10,7 @@ from sklearn.metrics import precision_recall_fscore_support, precision_recall_cu
 # Set precision for numpy
 np.set_printoptions(precision=4)
 
-def getEmbeddings(model, wrd_list, embed_dims):
+def getEmbeddings(wrd_list, embed_dims, embed_loc):
 	"""
 	Gives embedding for each word in wrd_list
 
@@ -24,11 +24,16 @@ def getEmbeddings(model, wrd_list, embed_dims):
 	-------
 	embed_matrix:	(len(wrd_list) x embed_dims) matrix containing embedding for each word in wrd_list in the same order
 	"""
-	embed_list = []
+	embed_list, wrd2vec = [], {}
 
+	for line in open(embed_loc):
+		data		= line.strip().split(' ')
+		wrd, vec	= data[0], data[1:]
+		wrd2vec[wrd]	= np.float32(vec)
+
+	# Generates a random vector for words not in vocab
 	for wrd in wrd_list:
-		if wrd in model.vocab: 	embed_list.append(model.word_vec(wrd))
-		else: 			embed_list.append(np.random.randn(embed_dims))	# Generates a random vector for words not in vocab
+		embed_list.append(wrd2vec.get(wrd, np.random.randn(embed_dims)))
 
 	return np.array(embed_list, dtype=np.float32)
 
