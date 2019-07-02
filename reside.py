@@ -515,7 +515,7 @@ if __name__== "__main__":
 	parser.add_argument('-seed', 	 dest="seed", 		default=1234, 			type=int,			help='Seed for randomization')
 	parser.add_argument('-logdir',	 dest="log_dir", 	default='./log/', 						help='Log directory')
 	parser.add_argument('-config',	 dest="config_dir", 	default='./config/', 						help='Config directory')
-	parser.add_argument('-embed_loc',dest="embed_loc", 	default='./glove/glove.6B.50d.txt', 				help='Log directory')
+	parser.add_argument('-embed_loc',dest="embed_loc", 	default='./glove/glove.6B.50d.txt', 				help='Path of word embedding file')
 	parser.add_argument('-embed_dim',dest="embed_dim", 	default=50, type=int,						help='Dimension of embedding')
 	args = parser.parse_args()
 
