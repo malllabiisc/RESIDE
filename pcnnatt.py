@@ -34,8 +34,8 @@ class PCNNATT(Model):
 				sent = sents[i]
 				pos1, pos2 = sub_pos[i], obj_pos[i]
 				pos1, pos2 = min(pos1, pos2), max(pos1, pos2)
-				if pos1 == pos2 or pos1 <= 0 or pos2 >= len(sent)-2:
-					pos1 = len(sent) // 4 
+				if pos1 == pos2 or pos1 <= 0 or pos2 >= len(sent)-1:
+					pos1 = np.ceil(len(sent) / 4)
 					pos2 = pos1 + len(sent) // 2
 
 				part_pos.append([pos1, pos2])
