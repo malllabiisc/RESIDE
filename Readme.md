@@ -131,7 +131,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 ### Citation:
 Please cite the following paper if you use this code in your work.
 
-```tex
+```
 @inproceedings{reside2018,
   author = 	"Vashishth, Shikhar and 
   		Joshi, Rishabh and
