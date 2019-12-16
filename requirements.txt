@@ -4,4 +4,4 @@ tensorflow==1.12.1
 scipy==1.0.0
 nltk==3.4.5
 scikit_learn==0.20.0
-tensorflow==1.11.0
+tensorflow==1.15.0
