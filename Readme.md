@@ -157,4 +157,4 @@ Please cite the following paper if you use this code in your work.
 }
 ```
 
-For any clarification, comments, or suggestions please create an issue or contact [shikhar@iisc.ac.in](http://shikhar-vashishth.github.io).
+For any clarification, comments, or suggestions please create an issue or contact [Shikhar](http://shikhar-vashishth.github.io).
