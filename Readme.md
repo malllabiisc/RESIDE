@@ -23,7 +23,7 @@ Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Dis
 
 - We use [Riedel NYT](http://iesl.cs.umass.edu/riedel/ecml/) and [Google IISc Distant Supervision (GIDS)](https://arxiv.org/pdf/1804.06987.pdf) dataset​ for evaluation.
 
-- Datasets in json list format with side information can be downloaded from here: [RiedelNYT](https://drive.google.com/file/d/1CUk10FTncaaZspAoh8YkHTML3RJHfW7e/view?usp=sharing) and [GIDS](https://drive.google.com/open?id=1gTNAbv8My2QDmP-OHLFtJFlzPDoCG4aI).  
+- Datasets in json list format with side information can be downloaded from here: [RiedelNYT](https://drive.google.com/open?id=1D7bZPvrSAbIPaFSG7ZswYQcPA3tmouCw) and [GIDS](https://drive.google.com/open?id=1gTNAbv8My2QDmP-OHLFtJFlzPDoCG4aI).  
 
 - The processed version of the datasets can be downloaded from [RiedelNYT](https://drive.google.com/file/d/1UD86c_6O_NSBn2DYirk6ygaHy_fTL-hN/view?usp=sharing) and [GIDS](https://drive.google.com/file/d/1UMS4EmWv5SWXfaSl_ZC4DcT3dk3JyHeq/view?usp=sharing). The structure of the processed input data is as follows.
 
