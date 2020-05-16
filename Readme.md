@@ -1,18 +1,30 @@
-## RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information
+<h1 align="center">
+  RESIDE
+</h1>
 
-[![Conference](http://img.shields.io/badge/EMNLP-2018-4b44ce.svg)](https://www.aclweb.org/anthology/D18-1157/)
-[![Paper](http://img.shields.io/badge/paper-arxiv.1812.04361-B31B1B.svg)](https://arxiv.org/abs/1812.04361)
-[![Supplementary](http://img.shields.io/badge/supplementary-pdf-green.svg)](https://shikhar-vashishth.github.io/assets/pdf/reside_supp.pdf)
-[![Video](http://img.shields.io/badge/video-vimeo-blue.svg)](https://vimeo.com/305199302)
-[![Slides](http://img.shields.io/badge/slides-pdf-red.svg)](https://shikhar-vashishth.github.io/assets/pdf/slides_reside.pdf)
-[![Poster](http://img.shields.io/badge/poster-pdf-9cf.svg)](https://shikhar-vashishth.github.io/assets/pdf/reside_poster.pdf)
+<h4 align="center">Improving Distantly-Supervised Neural Relation Extraction using Side Information</h4>
 
-Source code for [EMNLP 2018](http://emnlp2018.org) paper: [RESIDE: Improving Distantly-Supervised Neural Relation Extraction using Side Information](http://aclweb.org/anthology/D18-1157). Also includes implementation of [PCNN](http://www.emnlp2015.org/proceedings/EMNLP/pdf/EMNLP203.pdf), [PCNN+ATT](https://www.aclweb.org/anthology/P16-1200), [CNN](https://www.aclweb.org/anthology/C14-1220), CNN+ATT, and [BGWA](https://arxiv.org/pdf/1804.06987.pdf) models.
+<p align="center">
+  <a href="https://2018.emnlp.org/"><img src="http://img.shields.io/badge/EMNLP-2018-4b44ce.svg"></a>
+  <a href="https://arxiv.org/abs/1812.04361"><img src="http://img.shields.io/badge/Paper-PDF-red.svg"></a>
+  <a href="http://img.shields.io/badge/video-vimeo-blue.svg"><img src="http://img.shields.io/badge/Video-Vimeo-green.svg"></a>
+  <a href="https://shikhar-vashishth.github.io/assets/pdf/reside_supp.pdf"><img src="http://img.shields.io/badge/Supplementary-PDF-B31B1B.svg"></a>
+  <a href="https://shikhar-vashishth.github.io/assets/pdf/reside_poster.pdf"><img src="http://img.shields.io/badge/Slides-PDF-9cf.svg"></a>
+  <a href="https://shikhar-vashishth.github.io/assets/pdf/slides_reside.pdf"><img src="http://img.shields.io/badge/Slides-PDF-orange.svg"></a>
+  <a href="https://github.com/malllabiisc/RESIDE/blob/master/LICENSE">
+    <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg">
+  </a>
+</p>
+
+Also includes implementation of [PCNN](http://www.emnlp2015.org/proceedings/EMNLP/pdf/EMNLP203.pdf), [PCNN+ATT](https://www.aclweb.org/anthology/P16-1200), [CNN](https://www.aclweb.org/anthology/C14-1220), CNN+ATT, and [BGWA](https://arxiv.org/pdf/1804.06987.pdf) models.
 
 
-![](https://github.com/malllabiisc/RESIDE/blob/master/images/overview.png)*Overview of RESIDE (proposed method): RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention.*
-*Then, sentence embedding is concatenated with relation alias information, which comes from the Side Information Acquisition Section, before computing attention over sentences. Finally, bag representation with entity type information is fed to a softmax classifier. Please refer to paper for more details.* 
+<h2 align="center">
+  Overview of RESIDE
+  <img align="center"  src="./images/overview.png" alt="...">
+</h2>
 
+RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention. Then, sentence embedding is concatenated with relation alias information, which comes from the Side Information Acquisition Section, before computing attention over sentences. Finally, bag representation with entity type information is fed to a softmax classifier. Please refer to paper for more details.
 
 ### Dependencies
 
