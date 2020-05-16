@@ -16,15 +16,14 @@
   </a>
 </p>
 
-Also includes implementation of [PCNN](http://www.emnlp2015.org/proceedings/EMNLP/pdf/EMNLP203.pdf), [PCNN+ATT](https://www.aclweb.org/anthology/P16-1200), [CNN](https://www.aclweb.org/anthology/C14-1220), CNN+ATT, and [BGWA](https://arxiv.org/pdf/1804.06987.pdf) models.
-
-
 <h2 align="center">
   Overview of RESIDE
   <img align="center"  src="./images/overview.png" alt="...">
 </h2>
 
 RESIDE first encodes each sentence in the bag by concatenating embeddings (denoted by ⊕) from Bi-GRU and Syntactic GCN for each token, followed by word attention. Then, sentence embedding is concatenated with relation alias information, which comes from the Side Information Acquisition Section, before computing attention over sentences. Finally, bag representation with entity type information is fed to a softmax classifier. Please refer to paper for more details.
+
+Also includes implementation of [PCNN](http://www.emnlp2015.org/proceedings/EMNLP/pdf/EMNLP203.pdf), [PCNN+ATT](https://www.aclweb.org/anthology/P16-1200), [CNN](https://www.aclweb.org/anthology/C14-1220), CNN+ATT, and [BGWA](https://arxiv.org/pdf/1804.06987.pdf) models.
 
 ### Dependencies
 
