@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://2018.emnlp.org/"><img src="http://img.shields.io/badge/EMNLP-2018-4b44ce.svg"></a>
   <a href="https://arxiv.org/abs/1812.04361"><img src="http://img.shields.io/badge/Paper-PDF-red.svg"></a>
-  <a href="http://img.shields.io/badge/video-vimeo-blue.svg"><img src="http://img.shields.io/badge/Video-Vimeo-green.svg"></a>
+  <a href="https://vimeo.com/305199302"><img src="http://img.shields.io/badge/Video-Vimeo-green.svg"></a>
   <a href="https://shikhar-vashishth.github.io/assets/pdf/reside_supp.pdf"><img src="http://img.shields.io/badge/Supplementary-PDF-B31B1B.svg"></a>
   <a href="https://shikhar-vashishth.github.io/assets/pdf/reside_poster.pdf"><img src="http://img.shields.io/badge/Poster-PDF-9cf.svg"></a>
   <a href="https://shikhar-vashishth.github.io/assets/pdf/slides_reside.pdf"><img src="http://img.shields.io/badge/Slides-PDF-orange.svg"></a>
